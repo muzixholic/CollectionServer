@@ -1,0 +1,501 @@
+openapi: 3.0.3
+info:
+  title: 미디어 정보 API 서버
+  description: |
+    다양한 미디어 유형(도서, Blu-ray, DVD, 음악 앨범)의 바코드/ISBN을 입력받아 
+    해당 미디어의 상세 정보를 반환하는 통합 REST API.
+    
+    **주요 기능**:
+    - Database-First 아키텍처 (PostgreSQL 우선 조회)
+    - 자동 바코드 형식 감지 (ISBN-10/13, UPC, EAN-13)
+    - 외부 API 우선순위 폴백 (Google Books, TMDb, MusicBrainz 등)
+    - 속도 제한: 100 req/min
+    
+    **기술 스택**:
+    - .NET 10.0
+    - C# 13
+    - ASP.NET Core 10.0
+    - Entity Framework Core 10.0
+    - PostgreSQL 16+
+  version: 1.0.0
+  contact:
+    name: Collection Server API Support
+    email: support@collectionserver.example
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: 로컬 개발 서버
+  - url: https://api.collectionserver.example
+    description: 프로덕션 서버
+
+tags:
+  - name: Items
+    description: 미디어 항목 조회 API
+
+paths:
+  /items/{barcode}:
+    get:
+      tags:
+        - Items
+      summary: 바코드로 미디어 정보 조회
+      description: |
+        ISBN-10/13, UPC, EAN-13 바코드로 미디어 정보를 조회합니다.
+        
+        **조회 순서**:
+        1. PostgreSQL 데이터베이스 조회
+        2. 미발견 시 외부 API 호출 (우선순위 순서)
+        3. 결과를 데이터베이스에 저장
+        
+        **지원 바코드 형식**:
+        - ISBN-10: 10자리 (예: 0134685997)
+        - ISBN-13: 13자리, 978/979 시작 (예: 9780134685991)
+        - UPC: 12자리 (예: 883929641680)
+        - EAN-13: 13자리 (예: 0883929641680)
+      operationId: getMediaByBarcode
+      parameters:
+        - name: barcode
+          in: path
+          required: true
+          description: ISBN-10/13, UPC, 또는 EAN-13 바코드
+          schema:
+            type: string
+            pattern: '^[0-9]{10,13}$'
+            example: "9780134685991"
+      responses:
+        '200':
+          description: 미디어 정보 성공 반환
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BookResponse'
+                  - $ref: '#/components/schemas/MovieResponse'
+                  - $ref: '#/components/schemas/MusicAlbumResponse'
+              examples:
+                book:
+                  summary: 도서 예제
+                  value:
+                    id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    barcode: "9780134685991"
+                    mediaType: "Book"
+                    title: "Effective Java"
+                    description: "The definitive guide to Java programming"
+                    imageUrl: "https://books.google.com/books/content?id=..."
+                    source: "GoogleBooks"
+                    createdAt: "2025-11-16T14:30:00Z"
+                    updatedAt: "2025-11-16T14:30:00Z"
+                    isbn13: "9780134685991"
+                    authors:
+                      - "Joshua Bloch"
+                    publisher: "Addison-Wesley"
+                    publishDate: "2018-01-06"
+                    pageCount: 416
+                    genre: "Computer Science"
+                movie:
+                  summary: 영화 예제
+                  value:
+                    id: "4fb85f64-5717-4562-b3fc-2c963f66afa7"
+                    barcode: "883929641680"
+                    mediaType: "Movie"
+                    title: "Inception"
+                    description: "A thief who steals corporate secrets through dream-sharing technology"
+                    imageUrl: "https://image.tmdb.org/t/p/w500/..."
+                    source: "TMDb"
+                    createdAt: "2025-11-16T14:35:00Z"
+                    updatedAt: "2025-11-16T14:35:00Z"
+                    director: "Christopher Nolan"
+                    cast:
+                      - "Leonardo DiCaprio"
+                      - "Ellen Page"
+                      - "Tom Hardy"
+                    runtimeMinutes: 148
+                    releaseDate: "2010-07-16"
+                    rating: "PG-13"
+                    genre: "Science Fiction"
+                musicAlbum:
+                  summary: 음악 앨범 예제
+                  value:
+                    id: "5fb85f64-5717-4562-b3fc-2c963f66afa8"
+                    barcode: "602445839070"
+                    mediaType: "MusicAlbum"
+                    title: "Abbey Road"
+                    description: "The eleventh studio album by the Beatles"
+                    imageUrl: "https://coverartarchive.org/release/..."
+                    source: "MusicBrainz"
+                    createdAt: "2025-11-16T14:40:00Z"
+                    updatedAt: "2025-11-16T14:40:00Z"
+                    artist: "The Beatles"
+                    tracks:
+                      - trackNumber: 1
+                        title: "Come Together"
+                        durationSeconds: 259
+                      - trackNumber: 2
+                        title: "Something"
+                        durationSeconds: 183
+                    releaseDate: "1969-09-26"
+                    label: "Apple Records"
+                    genre: "Rock"
+        '400':
+          description: 잘못된 바코드 형식
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "INVALID_BARCODE_FORMAT"
+                  message: "The provided barcode format is invalid. Expected ISBN-10, ISBN-13, UPC, or EAN-13."
+                  details:
+                    provided: "12345"
+                    expectedFormats:
+                      - "ISBN-10 (10 digits)"
+                      - "ISBN-13 (13 digits)"
+                      - "UPC (12 digits)"
+                      - "EAN-13 (13 digits)"
+        '404':
+          description: 미디어를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "MEDIA_NOT_FOUND"
+                  message: "No media found for the provided barcode after checking all sources."
+                  details:
+                    barcode: "9999999999999"
+                    sourcesChecked:
+                      - "GoogleBooks"
+                      - "KakaoBooks"
+                      - "Aladin"
+        '429':
+          description: 속도 제한 초과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "RATE_LIMIT_EXCEEDED"
+                  message: "Rate limit exceeded. Maximum 100 requests per minute."
+                  details:
+                    limit: 100
+                    window: "1 minute"
+                    retryAfter: 45
+        '500':
+          description: 서버 내부 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "INTERNAL_ERROR"
+                  message: "An unexpected error occurred while processing your request."
+                  details: null
+        '503':
+          description: 모든 외부 API 서비스 불가
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "EXTERNAL_SERVICES_UNAVAILABLE"
+                  message: "All external data sources are currently unavailable. Please try again later."
+                  details:
+                    failedSources:
+                      - "GoogleBooks"
+                      - "KakaoBooks"
+                      - "Aladin"
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: 헬스 체크
+      description: API 서버 및 데이터베이스 연결 상태 확인
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 서비스 정상
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Healthy"
+                  database:
+                    type: string
+                    example: "Connected"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-11-16T14:30:00Z"
+        '503':
+          description: 서비스 불가 (데이터베이스 연결 실패)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Unhealthy"
+                  database:
+                    type: string
+                    example: "Disconnected"
+
+components:
+  schemas:
+    MediaItemBase:
+      type: object
+      required:
+        - id
+        - barcode
+        - mediaType
+        - title
+        - source
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 고유 식별자
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        barcode:
+          type: string
+          pattern: '^[0-9]{10,13}$'
+          description: ISBN-10/13, UPC, 또는 EAN-13
+          example: "9780134685991"
+        mediaType:
+          type: string
+          enum:
+            - Book
+            - Movie
+            - MusicAlbum
+          description: 미디어 타입
+        title:
+          type: string
+          maxLength: 500
+          description: 미디어 제목
+          example: "Effective Java"
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: 설명/줄거리/소개
+          example: "The definitive guide to Java programming"
+        imageUrl:
+          type: string
+          nullable: true
+          format: uri
+          maxLength: 2000
+          description: 표지/커버 이미지 URL
+          example: "https://books.google.com/books/content?id=..."
+        source:
+          type: string
+          maxLength: 50
+          description: 데이터 출처 (GoogleBooks, TMDb, MusicBrainz 등)
+          example: "GoogleBooks"
+        createdAt:
+          type: string
+          format: date-time
+          description: 생성 시각 (UTC)
+          example: "2025-11-16T14:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: 최종 수정 시각 (UTC)
+          example: "2025-11-16T14:30:00Z"
+
+    BookResponse:
+      allOf:
+        - $ref: '#/components/schemas/MediaItemBase'
+        - type: object
+          required:
+            - isbn13
+            - authors
+          properties:
+            isbn13:
+              type: string
+              pattern: '^97[89][0-9]{10}$'
+              description: ISBN-13 정규화 형식
+              example: "9780134685991"
+            authors:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              description: 저자 목록
+              example:
+                - "Joshua Bloch"
+            publisher:
+              type: string
+              nullable: true
+              maxLength: 255
+              description: 출판사
+              example: "Addison-Wesley"
+            publishDate:
+              type: string
+              format: date
+              nullable: true
+              description: 출판일
+              example: "2018-01-06"
+            pageCount:
+              type: integer
+              nullable: true
+              minimum: 1
+              description: 페이지 수
+              example: 416
+            genre:
+              type: string
+              nullable: true
+              maxLength: 100
+              description: 장르
+              example: "Computer Science"
+
+    MovieResponse:
+      allOf:
+        - $ref: '#/components/schemas/MediaItemBase'
+        - type: object
+          properties:
+            director:
+              type: string
+              nullable: true
+              maxLength: 255
+              description: 감독
+              example: "Christopher Nolan"
+            cast:
+              type: array
+              items:
+                type: string
+              nullable: true
+              description: 출연진 목록
+              example:
+                - "Leonardo DiCaprio"
+                - "Ellen Page"
+                - "Tom Hardy"
+            runtimeMinutes:
+              type: integer
+              nullable: true
+              minimum: 1
+              description: 상영 시간 (분)
+              example: 148
+            releaseDate:
+              type: string
+              format: date
+              nullable: true
+              description: 개봉일
+              example: "2010-07-16"
+            rating:
+              type: string
+              nullable: true
+              maxLength: 10
+              description: 등급 (G, PG, PG-13, R, NC-17)
+              example: "PG-13"
+            genre:
+              type: string
+              nullable: true
+              maxLength: 100
+              description: 장르
+              example: "Science Fiction"
+
+    MusicAlbumResponse:
+      allOf:
+        - $ref: '#/components/schemas/MediaItemBase'
+        - type: object
+          required:
+            - artist
+          properties:
+            artist:
+              type: string
+              maxLength: 255
+              description: 아티스트/밴드
+              example: "The Beatles"
+            tracks:
+              type: array
+              items:
+                $ref: '#/components/schemas/Track'
+              nullable: true
+              description: 트랙 목록
+            releaseDate:
+              type: string
+              format: date
+              nullable: true
+              description: 발매일
+              example: "1969-09-26"
+            label:
+              type: string
+              nullable: true
+              maxLength: 255
+              description: 레이블/레코드사
+              example: "Apple Records"
+            genre:
+              type: string
+              nullable: true
+              maxLength: 100
+              description: 장르
+              example: "Rock"
+
+    Track:
+      type: object
+      required:
+        - trackNumber
+        - title
+        - durationSeconds
+      properties:
+        trackNumber:
+          type: integer
+          minimum: 1
+          description: 트랙 번호
+          example: 1
+        title:
+          type: string
+          description: 트랙 제목
+          example: "Come Together"
+        durationSeconds:
+          type: integer
+          minimum: 1
+          description: 재생 시간 (초)
+          example: 259
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: 오류 코드
+              example: "INVALID_BARCODE_FORMAT"
+            message:
+              type: string
+              description: 사람이 읽을 수 있는 오류 메시지
+              example: "The provided barcode format is invalid."
+            details:
+              type: object
+              nullable: true
+              description: 추가 오류 세부정보
+              additionalProperties: true
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API 키 인증 (향후 구현 예정)
+
+security: []
