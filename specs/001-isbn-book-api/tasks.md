@@ -1,595 +1,684 @@
-# Tasks: 미디어 정보 API 서버
+---
+description: "미디어 정보 API 서버 구현을 위한 작업 목록"
+---
 
-**Feature**: 001-isbn-book-api  
-**Date**: 2025-11-16  
-**Input**: Design documents from `/specs/001-isbn-book-api/`  
-**Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅, contracts/ ✅, quickstart.md ✅
+# 작업 목록 (Tasks): 미디어 정보 API 서버
 
-**Tests**: ⚠️ 테스트 작업은 명세서에 명시적으로 요청되어 포함됩니다.
+**입력 (Input)**: `/specs/001-isbn-book-api/`의 설계 문서  
+**전제조건 (Prerequisites)**: plan.md, spec.md, research.md, data-model.md, contracts/openapi.yaml, quickstart.md  
+**기술 스택 (Tech Stack)**: ASP.NET Core 10.0, C# 13, Entity Framework Core 10.0, PostgreSQL 16+
 
-**Organization**: 사용자 스토리별로 작업을 그룹화하여 각 스토리를 독립적으로 구현하고 테스트할 수 있도록 합니다.
+**테스트 (Tests)**: 이 프로젝트는 높은 신뢰성이 필요하므로 모든 계층에 대한 테스트 작업이 포함됩니다.
 
-## Format: `- [ ] [ID] [P?] [Story?] Description`
+**조직화 (Organization)**: 작업은 사용자 스토리별로 그룹화되어 각 스토리의 독립적인 구현 및 테스트를 가능하게 합니다.
 
-- **[P]**: 병렬 실행 가능 (다른 파일, 의존성 없음)
-- **[Story]**: 사용자 스토리 레이블 (예: US1, US2, US3) - 사용자 스토리 페이즈에만 적용
+## 형식: `[ID] [P?] [Story] 설명`
+
+- **[P]**: 병렬 실행 가능 (다른 파일, 종속성 없음)
+- **[Story]**: 이 작업이 속한 사용자 스토리 (예: US1, US2, US3)
 - 설명에 정확한 파일 경로 포함
 
----
+## 경로 규칙 (Path Conventions)
 
-## Phase 1: 프로젝트 설정 (Sprint 0)
+프로젝트 구조 (plan.md 기준):
+```
+src/
+├── CollectionServer.Api/           # ASP.NET Core Web API
+├── CollectionServer.Core/          # 도메인 레이어
+└── CollectionServer.Infrastructure/ # 인프라 레이어
 
-**목적**: 프로젝트 초기화 및 기본 구조 생성
-
-**예상 시간**: 4-6시간
-
-### 프로젝트 구조 및 의존성
-
-- [ ] T001 리포지토리 루트에 global.json 생성 (.NET 10.0.100 SDK 지정)
-- [ ] T002 솔루션 파일 생성 (CollectionServer.sln)
-- [ ] T003 [P] API 프로젝트 생성 (src/CollectionServer.Api/ - ASP.NET Core 10.0 Web API, net10.0)
-- [ ] T004 [P] Core 프로젝트 생성 (src/CollectionServer.Core/ - 클래스 라이브러리, net10.0)
-- [ ] T005 [P] Infrastructure 프로젝트 생성 (src/CollectionServer.Infrastructure/ - 클래스 라이브러리, net10.0)
-- [ ] T006 [P] 단위 테스트 프로젝트 생성 (tests/CollectionServer.UnitTests/ - xUnit, net10.0)
-- [ ] T007 [P] 통합 테스트 프로젝트 생성 (tests/CollectionServer.IntegrationTests/ - xUnit, net10.0)
-- [ ] T008 [P] 계약 테스트 프로젝트 생성 (tests/CollectionServer.ContractTests/ - xUnit, net10.0)
-- [ ] T009 프로젝트 참조 구성 (Api → Core/Infrastructure, Infrastructure → Core, Tests → 해당 프로젝트)
-- [ ] T010 각 .csproj에 LangVersion 13.0 및 Nullable enable 설정
-
-### NuGet 패키지 설치
-
-- [ ] T011 [P] API 프로젝트에 패키지 추가 (Microsoft.AspNetCore.OpenApi 10.0.0, Swashbuckle.AspNetCore 7.0.0, Serilog.AspNetCore 10.0.0)
-- [ ] T012 [P] Infrastructure 프로젝트에 EF Core 패키지 추가 (Microsoft.EntityFrameworkCore 10.0.0, Npgsql.EntityFrameworkCore.PostgreSQL 10.0.0, Microsoft.EntityFrameworkCore.Design 10.0.0)
-- [ ] T013 [P] 테스트 프로젝트에 패키지 추가 (xUnit 2.9.0, Moq 4.20.0, FluentAssertions 6.12.0, Microsoft.NET.Test.Sdk 17.11.0)
-- [ ] T014 전체 솔루션 빌드 및 패키지 복원 검증
-
-### 개발 환경 설정
-
-- [ ] T015 [P] Docker Compose 파일 생성 (docker/docker-compose.yml - PostgreSQL 16 컨테이너 설정)
-- [ ] T016 [P] Dockerfile 생성 (docker/Dockerfile - .NET 10.0 multi-stage build)
-- [ ] T017 [P] .gitignore 파일 구성 (.NET 프로젝트용)
-- [ ] T018 [P] appsettings.json 및 appsettings.Development.json 구성 (src/CollectionServer.Api/)
-- [ ] T019 [P] User Secrets 초기화 및 외부 API 키 플레이스홀더 설정
-
-**Checkpoint**: 프로젝트 구조 완성, 빌드 성공, Docker 컨테이너 실행 가능
+tests/
+├── CollectionServer.UnitTests/
+├── CollectionServer.IntegrationTests/
+└── CollectionServer.ContractTests/
+```
 
 ---
 
-## Phase 2: 기반 인프라 (Sprint 0 - 모든 사용자 스토리 차단)
+## Phase 1: 설정 (Setup - 공유 인프라)
 
-**목적**: 모든 사용자 스토리가 의존하는 핵심 인프라
+**목적 (Purpose)**: 프로젝트 초기화 및 기본 구조 생성
 
-**예상 시간**: 12-16시간
+- [ ] T001 global.json 생성하여 .NET SDK 10.0.100 버전 고정
+- [ ] T002 CollectionServer.sln 솔루션 파일 생성
+- [ ] T003 [P] src/CollectionServer.Api 프로젝트 생성 (ASP.NET Core 10 Web API)
+- [ ] T004 [P] src/CollectionServer.Core 프로젝트 생성 (클래스 라이브러리)
+- [ ] T005 [P] src/CollectionServer.Infrastructure 프로젝트 생성 (클래스 라이브러리)
+- [ ] T006 [P] tests/CollectionServer.UnitTests 프로젝트 생성 (xUnit)
+- [ ] T007 [P] tests/CollectionServer.IntegrationTests 프로젝트 생성 (xUnit)
+- [ ] T008 [P] tests/CollectionServer.ContractTests 프로젝트 생성 (xUnit)
+- [ ] T009 프로젝트 간 참조 추가 (Api → Core, Infrastructure; Infrastructure → Core)
+- [ ] T010 [P] Api 프로젝트에 필수 NuGet 패키지 추가 (Swashbuckle.AspNetCore, Serilog.AspNetCore)
+- [ ] T011 [P] Infrastructure 프로젝트에 EF Core 패키지 추가 (Microsoft.EntityFrameworkCore, Npgsql.EntityFrameworkCore.PostgreSQL)
+- [ ] T012 [P] 테스트 프로젝트에 테스트 프레임워크 패키지 추가 (xUnit, Moq, FluentAssertions)
+- [ ] T013 [P] .gitignore 파일 생성 (.NET 표준 템플릿)
+- [ ] T014 [P] README.md 파일 생성 (프로젝트 개요, 실행 방법)
+- [ ] T015 [P] Containerfile 생성 (Podman 빌드용 멀티 스테이지)
+- [ ] T016 [P] podman-compose.yml 생성 (PostgreSQL + API 서비스)
 
-**⚠️ 중요**: 이 페이즈가 완료되기 전에는 어떤 사용자 스토리 작업도 시작할 수 없습니다.
+---
 
-### 도메인 모델 및 엔티티
+## Phase 2: 기반 (Foundational - 차단 전제조건)
 
-- [ ] T020 MediaType enum 생성 (src/CollectionServer.Core/Models/MediaType.cs - Book, Movie, MusicAlbum)
-- [ ] T021 MediaItem 추상 기본 클래스 생성 (src/CollectionServer.Core/Models/MediaItem.cs - Id, Barcode, MediaType, Title, Description, ImageUrl, Source, CreatedAt, UpdatedAt)
-- [ ] T022 [P] Book 엔티티 생성 (src/CollectionServer.Core/Models/Book.cs - MediaItem 상속, Isbn13, Authors, Publisher, PublishDate, PageCount, Genre)
-- [ ] T023 [P] Movie 엔티티 생성 (src/CollectionServer.Core/Models/Movie.cs - MediaItem 상속, Director, Cast, RuntimeMinutes, ReleaseDate, Rating, Genre)
-- [ ] T024 [P] MusicAlbum 엔티티 생성 (src/CollectionServer.Core/Models/MusicAlbum.cs - MediaItem 상속, Artist, Tracks, ReleaseDate, Label, Genre)
-- [ ] T025 [P] Track 값 객체 생성 (src/CollectionServer.Core/Models/Track.cs - TrackNumber, Title, DurationSeconds)
+**목적 (Purpose)**: 모든 사용자 스토리가 구현되기 전에 완료되어야 하는 핵심 인프라
 
-### 데이터베이스 인프라
+**⚠️ 중요**: 이 단계가 완료될 때까지 사용자 스토리 작업을 시작할 수 없습니다
 
-- [ ] T026 ApplicationDbContext 생성 (src/CollectionServer.Infrastructure/Data/ApplicationDbContext.cs - DbSet<MediaItem>, DbSet<Book>, DbSet<Movie>, DbSet<MusicAlbum>)
-- [ ] T027 [P] BookConfiguration 생성 (src/CollectionServer.Infrastructure/Data/Configurations/BookConfiguration.cs - TPT 전략, PostgreSQL 배열 매핑)
-- [ ] T028 [P] MovieConfiguration 생성 (src/CollectionServer.Infrastructure/Data/Configurations/MovieConfiguration.cs - TPT 전략, PostgreSQL 배열 매핑)
-- [ ] T029 [P] MusicAlbumConfiguration 생성 (src/CollectionServer.Infrastructure/Data/Configurations/MusicAlbumConfiguration.cs - TPT 전략, JSONB 매핑)
-- [ ] T030 [P] MediaItemConfiguration 생성 (src/CollectionServer.Infrastructure/Data/Configurations/MediaItemConfiguration.cs - 인덱스 설정: Barcode UNIQUE, MediaType)
-- [ ] T031 EF Core 초기 마이그레이션 생성 (src/CollectionServer.Infrastructure/Migrations/ - InitialCreate)
-- [ ] T032 PostgreSQL 데이터베이스 생성 및 마이그레이션 적용 (Docker Compose 또는 로컬)
+### 도메인 기반 작업
 
-### Repository 패턴
+- [ ] T017 [P] src/CollectionServer.Core/Enums/MediaType.cs 생성 (Book, Movie, MusicAlbum)
+- [ ] T018 [P] src/CollectionServer.Core/Enums/BarcodeType.cs 생성 (ISBN10, ISBN13, UPC, EAN13)
+- [ ] T019 [P] src/CollectionServer.Core/Entities/MediaItem.cs 추상 기본 클래스 생성
+- [ ] T020 [P] src/CollectionServer.Core/Entities/Book.cs 엔티티 생성
+- [ ] T021 [P] src/CollectionServer.Core/Entities/Movie.cs 엔티티 생성
+- [ ] T022 [P] src/CollectionServer.Core/Entities/MusicAlbum.cs 엔티티 생성
+- [ ] T023 [P] src/CollectionServer.Core/Entities/Track.cs 값 객체 생성 (음악 트랙용)
+- [ ] T024 [P] src/CollectionServer.Core/Exceptions/InvalidBarcodeException.cs 생성
+- [ ] T025 [P] src/CollectionServer.Core/Exceptions/NotFoundException.cs 생성
+- [ ] T026 [P] src/CollectionServer.Core/Exceptions/RateLimitExceededException.cs 생성
+- [ ] T027 [P] src/CollectionServer.Core/Interfaces/IMediaRepository.cs 인터페이스 정의
+- [ ] T028 [P] src/CollectionServer.Core/Interfaces/IMediaService.cs 인터페이스 정의
+- [ ] T029 [P] src/CollectionServer.Core/Interfaces/IMediaProvider.cs 인터페이스 정의 (외부 API용)
 
-- [ ] T033 IMediaRepository 인터페이스 정의 (src/CollectionServer.Core/Interfaces/IMediaRepository.cs - GetByBarcodeAsync, AddAsync, UpdateAsync, ExistsAsync, GetRecentAsync)
-- [ ] T034 MediaRepository 구현 (src/CollectionServer.Infrastructure/Repositories/MediaRepository.cs - EF Core 기반 구현, AsNoTracking 최적화)
+### 데이터베이스 기반 작업
 
-### 바코드 검증 및 감지
+- [ ] T030 src/CollectionServer.Infrastructure/Data/ApplicationDbContext.cs 생성
+- [ ] T031 [P] src/CollectionServer.Infrastructure/Data/Configurations/MediaItemConfiguration.cs 생성 (Fluent API)
+- [ ] T032 [P] src/CollectionServer.Infrastructure/Data/Configurations/BookConfiguration.cs 생성 (Fluent API)
+- [ ] T033 [P] src/CollectionServer.Infrastructure/Data/Configurations/MovieConfiguration.cs 생성 (Fluent API)
+- [ ] T034 [P] src/CollectionServer.Infrastructure/Data/Configurations/MusicAlbumConfiguration.cs 생성 (Fluent API)
+- [ ] T035 EF Core 초기 마이그레이션 생성 (InitialCreate)
+- [ ] T036 PostgreSQL 데이터베이스 스키마 적용 (dotnet ef database update)
 
-- [ ] T035 BarcodeType enum 생성 (src/CollectionServer.Core/Models/BarcodeType.cs - ISBN10, ISBN13Book, EAN13Media, UPCMedia)
-- [ ] T036 BarcodeValidator 클래스 생성 (src/CollectionServer.Core/Validators/BarcodeValidator.cs - ISBN-10/13, UPC, EAN-13 체크섬 검증)
-- [ ] T037 BarcodeDetectionService 생성 (src/CollectionServer.Core/Services/BarcodeDetectionService.cs - 바코드 형식 자동 감지 및 정규화)
+### 공통 서비스 기반 작업
 
-### 외부 API 통합 기반
+- [ ] T037 src/CollectionServer.Core/Services/BarcodeValidator.cs 구현 (체크섬 검증 포함)
+- [ ] T038 src/CollectionServer.Infrastructure/Repositories/MediaRepository.cs 구현 (IMediaRepository)
+- [ ] T039 src/CollectionServer.Infrastructure/Options/ExternalApiSettings.cs 생성 (Options 패턴)
 
-- [ ] T038 IMediaProvider 인터페이스 정의 (src/CollectionServer.Core/Interfaces/IMediaProvider.cs - GetByBarcodeAsync, Priority, SupportedMediaTypes)
-- [ ] T039 HttpClientFactory 구성 (src/CollectionServer.Api/Extensions/ServiceCollectionExtensions.cs - 각 외부 API별 HttpClient 등록)
-- [ ] T040 외부 API 설정 모델 생성 (src/CollectionServer.Core/Configuration/ExternalApiSettings.cs - BaseUrl, ApiKey, Timeout 등)
+### ASP.NET Core 기반 작업
 
-### 오류 처리 및 미들웨어
+- [ ] T040 src/CollectionServer.Api/Program.cs 기본 설정 (WebApplicationBuilder, Minimal API 구조)
+- [ ] T041 src/CollectionServer.Api/appsettings.json 생성 (기본 설정, 연결 문자열 템플릿)
+- [ ] T042 src/CollectionServer.Api/appsettings.Development.json 생성 (개발 환경 설정)
+- [ ] T043 src/CollectionServer.Api/appsettings.Production.json 생성 (프로덕션 환경 설정)
+- [ ] T044 src/CollectionServer.Api/Middleware/ErrorHandlingMiddleware.cs 구현 (전역 예외 처리)
+- [ ] T045 src/CollectionServer.Api/Extensions/ServiceCollectionExtensions.cs 생성 (DI 확장 메서드)
+- [ ] T046 Program.cs에 Serilog 로깅 구성 추가 (JSON 포맷, 파일 출력)
+- [ ] T047 Program.cs에 Rate Limiting 미들웨어 추가 (100 req/min)
+- [ ] T048 Program.cs에 Swagger/OpenAPI 구성 추가 (한국어 설명 포함)
+- [ ] T049 Program.cs에 의존성 주입 구성 추가 (DbContext, Repositories, Services)
 
-- [ ] T041 [P] 커스텀 예외 클래스 생성 (src/CollectionServer.Core/Exceptions/ - InvalidBarcodeException, MediaNotFoundException, RateLimitExceededException, ExternalApiException)
-- [ ] T042 ErrorHandlingMiddleware 생성 (src/CollectionServer.Api/Middleware/ErrorHandlingMiddleware.cs - 전역 예외 처리, HTTP 상태 코드 매핑)
-- [ ] T043 ErrorResponse DTO 생성 (src/CollectionServer.Api/DTOs/ErrorResponse.cs - code, message, details 구조)
-
-### 로깅 및 모니터링
-
-- [ ] T044 Serilog 설정 (src/CollectionServer.Api/Program.cs - Console 및 File sink, JSON 포맷, 구조화된 로깅)
-- [ ] T045 Health Check 엔드포인트 구현 (src/CollectionServer.Api/Endpoints/HealthEndpoint.cs - GET /health, 데이터베이스 연결 상태 확인)
-
-### API 문서화
-
-- [ ] T046 Swagger/OpenAPI 설정 (src/CollectionServer.Api/Program.cs - Swashbuckle 구성, contracts/openapi.yaml 기반)
-- [ ] T047 OpenAPI 메타데이터 추가 (제목, 설명, 버전, 연락처, 라이선스)
-
-### Dependency Injection 및 시작 구성
-
-- [ ] T048 ServiceCollectionExtensions 생성 (src/CollectionServer.Api/Extensions/ServiceCollectionExtensions.cs - DI 컨테이너 구성 헬퍼 메서드)
-- [ ] T049 Program.cs 기본 구성 (src/CollectionServer.Api/Program.cs - Minimal API, 미들웨어 파이프라인, DI 등록)
-
-**Checkpoint**: 기반 인프라 완성 - 사용자 스토리 구현 시작 가능
+**체크포인트 (Checkpoint)**: 기반 준비 완료 - 이제 사용자 스토리 구현을 병렬로 시작할 수 있습니다
 
 ---
 
 ## Phase 3: 사용자 스토리 1 - 개발자의 미디어 조회 통합 (우선순위: P1) 🎯 MVP
 
-**목표**: 개발자가 단일 엔드포인트로 바코드를 제공하여 모든 미디어 타입(도서, Blu-ray/DVD, 음악)의 정보를 조회할 수 있도록 합니다.
+**목표 (Goal)**: 바코드/ISBN으로 미디어 정보를 조회하는 핵심 API 엔드포인트 구현. Database-First 아키텍처로 PostgreSQL 우선 조회 후 외부 API 폴백.
 
-**독립적 테스트**: 유효한 바코드로 GET /items/{barcode} 호출 시 200 OK와 완전한 JSON 응답 수신
+**독립 테스트 (Independent Test)**: 유효한 ISBN-13으로 GET /items/{barcode} 호출 시 200 OK와 완전한 도서 정보 반환. 동일한 바코드 재요청 시 데이터베이스에서 빠르게 반환 (<500ms).
 
-**예상 시간**: 20-24시간
+### 사용자 스토리 1을 위한 계약 테스트
 
-### 테스트 (US1)
+- [ ] T050 [P] [US1] tests/CollectionServer.ContractTests/OpenApi/SwaggerSchemaTests.cs 생성 (OpenAPI 스키마 검증)
+- [ ] T051 [P] [US1] tests/CollectionServer.ContractTests/Endpoints/MediaEndpointContractTests.cs 생성 (엔드포인트 응답 형식 검증)
 
-- [ ] T050 [P] [US1] 단위 테스트: BarcodeValidator 검증 (tests/CollectionServer.UnitTests/Validators/BarcodeValidatorTests.cs - ISBN-10/13, UPC, EAN-13 체크섬 테스트)
-- [ ] T051 [P] [US1] 단위 테스트: BarcodeDetectionService (tests/CollectionServer.UnitTests/Services/BarcodeDetectionServiceTests.cs - 형식 자동 감지 테스트)
-- [ ] T052 [P] [US1] 계약 테스트: GET /items/{barcode} OpenAPI 스키마 검증 (tests/CollectionServer.ContractTests/Contracts/OpenApiSchemaTests.cs - 응답 스키마 일치 확인)
+### 사용자 스토리 1을 위한 단위 테스트
 
-### 외부 API Provider 구현 (US1)
+- [ ] T052 [P] [US1] tests/CollectionServer.UnitTests/Services/BarcodeValidatorTests.cs 생성 (ISBN-10/13, UPC, EAN 검증)
+- [ ] T053 [P] [US1] tests/CollectionServer.UnitTests/Services/MediaServiceTests.cs 생성 (Database-First 로직 테스트)
+- [ ] T054 [P] [US1] tests/CollectionServer.UnitTests/Repositories/MediaRepositoryTests.cs 생성 (CRUD 작업 테스트)
 
-- [ ] T053 [P] [US1] GoogleBooksProvider 구현 (src/CollectionServer.Core/Services/Providers/GoogleBooksProvider.cs - Google Books API v1 통합, ISBN 조회, Book 엔티티 매핑)
-- [ ] T054 [P] [US1] KakaoBookProvider 구현 (src/CollectionServer.Core/Services/Providers/KakaoBookProvider.cs - Kakao Book Search API 통합, Book 엔티티 매핑)
-- [ ] T055 [P] [US1] AladinProvider 구현 (src/CollectionServer.Core/Services/Providers/AladinProvider.cs - Aladin API 통합, Book 엔티티 매핑)
-- [ ] T056 [P] [US1] TMDbProvider 구현 (src/CollectionServer.Core/Services/Providers/TMDbProvider.cs - The Movie Database API 통합, UPC로 영화 조회, Movie 엔티티 매핑)
-- [ ] T057 [P] [US1] OMDbProvider 구현 (src/CollectionServer.Core/Services/Providers/OMDbProvider.cs - OMDb API 통합, Movie 엔티티 매핑)
-- [ ] T058 [P] [US1] MusicBrainzProvider 구현 (src/CollectionServer.Core/Services/Providers/MusicBrainzProvider.cs - MusicBrainz API 통합, UPC로 앨범 조회, MusicAlbum 엔티티 매핑)
-- [ ] T059 [P] [US1] DiscogsProvider 구현 (src/CollectionServer.Core/Services/Providers/DiscogsProvider.cs - Discogs API 통합, MusicAlbum 엔티티 매핑)
+### 사용자 스토리 1을 위한 통합 테스트
 
-### 핵심 서비스 로직 (US1)
+- [ ] T055 [US1] tests/CollectionServer.IntegrationTests/Fixtures/TestWebApplicationFactory.cs 생성 (In-Memory DB 설정)
+- [ ] T056 [US1] tests/CollectionServer.IntegrationTests/ApiTests/MediaEndpointTests.cs 생성 (E2E 테스트)
+- [ ] T057 [US1] tests/CollectionServer.IntegrationTests/RepositoryTests/MediaRepositoryIntegrationTests.cs 생성 (실제 DB 작업 테스트)
 
-- [ ] T060 [US1] IMediaService 인터페이스 정의 (src/CollectionServer.Core/Interfaces/IMediaService.cs - GetMediaByBarcodeAsync)
-- [ ] T061 [US1] MediaService 구현 (src/CollectionServer.Core/Services/MediaService.cs - Database-First 로직: 1. DB 조회, 2. 외부 API 우선순위 폴백, 3. DB 저장)
-- [ ] T062 [US1] 동시 요청 중복 외부 API 호출 방지 로직 구현 (MediaService 내 세마포어 또는 락 메커니즘)
+### 사용자 스토리 1을 위한 핵심 구현
 
-### API 엔드포인트 및 DTO (US1)
+- [ ] T058 [US1] src/CollectionServer.Core/Services/MediaService.cs 구현 (IMediaService, Database-First 로직)
+- [ ] T059 [US1] Program.cs에 MediaService DI 등록 추가
+- [ ] T060 [US1] Program.cs에 GET /items/{barcode} Minimal API 엔드포인트 추가
+- [ ] T061 [US1] Program.cs에 GET /health 헬스 체크 엔드포인트 추가
+- [ ] T062 [US1] GET /items/{barcode}에 Rate Limiting 적용 (.RequireRateLimiting("api"))
+- [ ] T063 [US1] GET /items/{barcode}에 OpenAPI 메타데이터 추가 (.WithOpenApi(), 한국어 설명)
+- [ ] T064 [US1] MediaService에서 바코드 검증 로직 통합 (BarcodeValidator 사용)
+- [ ] T065 [US1] MediaService에서 데이터베이스 조회 로직 구현 (MediaRepository 사용)
+- [ ] T066 [US1] 바코드 형식별 미디어 타입 자동 감지 로직 구현
 
-- [ ] T063 [P] [US1] MediaItemResponse DTO 생성 (src/CollectionServer.Api/DTOs/MediaItemResponse.cs - 기본 필드)
-- [ ] T064 [P] [US1] BookResponse DTO 생성 (src/CollectionServer.Api/DTOs/BookResponse.cs - MediaItemResponse 확장)
-- [ ] T065 [P] [US1] MovieResponse DTO 생성 (src/CollectionServer.Api/DTOs/MovieResponse.cs - MediaItemResponse 확장)
-- [ ] T066 [P] [US1] MusicAlbumResponse DTO 생성 (src/CollectionServer.Api/DTOs/MusicAlbumResponse.cs - MediaItemResponse 확장)
-- [ ] T067 [US1] ItemsEndpoint 구현 (src/CollectionServer.Api/Endpoints/ItemsEndpoint.cs - GET /items/{barcode}, MediaService 호출, DTO 매핑)
-- [ ] T068 [US1] Program.cs에 ItemsEndpoint 라우팅 등록
+### 사용자 스토리 1을 위한 검증
 
-### 통합 테스트 (US1)
+- [ ] T067 [US1] 로컬 환경에서 dotnet run 실행 및 Swagger UI 접근 확인
+- [ ] T068 [US1] GET /health 엔드포인트로 데이터베이스 연결 확인
+- [ ] T069 [US1] 잘못된 바코드 형식으로 400 Bad Request 응답 검증
+- [ ] T070 [US1] 존재하지 않는 바코드로 404 Not Found 응답 검증 (외부 API 없이)
 
-- [ ] T069 [P] [US1] 통합 테스트: 도서 조회 E2E (tests/CollectionServer.IntegrationTests/Api/ItemsEndpointTests.cs - 유효한 ISBN-13으로 도서 정보 조회, 200 응답 검증)
-- [ ] T070 [P] [US1] 통합 테스트: 영화 조회 E2E (tests/CollectionServer.IntegrationTests/Api/ItemsEndpointTests.cs - 유효한 UPC로 영화 정보 조회)
-- [ ] T071 [P] [US1] 통합 테스트: 음악 앨범 조회 E2E (tests/CollectionServer.IntegrationTests/Api/ItemsEndpointTests.cs - 유효한 UPC로 음악 앨범 정보 조회)
-- [ ] T072 [US1] 통합 테스트: Database-First 캐싱 검증 (동일 바코드 재요청 시 응답 시간 < 50ms, 외부 API 호출 없음)
-
-**Checkpoint**: 사용자 스토리 1 완전 기능, 독립적 테스트 가능, MVP 배포 준비 완료
+**체크포인트 (Checkpoint)**: 이 시점에서 사용자 스토리 1은 완전히 기능하고 독립적으로 테스트 가능해야 합니다 (외부 API 통합 제외)
 
 ---
 
 ## Phase 4: 사용자 스토리 2 - 최종 사용자의 미디어 발견 (우선순위: P1)
 
-**목표**: 최종 사용자가 바코드 스캔 또는 수동 입력으로 미디어 정보를 발견하고 완전한 메타데이터를 받을 수 있도록 합니다.
+**목표 (Goal)**: 외부 API 통합을 추가하여 다양한 미디어 유형(도서, 영화, 음악)의 완전한 정보를 제공. 우선순위 기반 폴백 전략 구현.
 
-**독립적 테스트**: 다양한 미디어 타입의 바코드로 조회 시 모든 관련 필드(제목, 저자/감독/아티스트, 이미지, 설명 등)가 정확하게 반환됨
+**독립 테스트 (Independent Test)**: 데이터베이스에 없는 유효한 ISBN-13으로 조회 시 Google Books API에서 정보를 가져와 200 OK 반환. 응답에 제목, 저자, 표지 이미지 URL 등 모든 필드 포함 확인.
 
-**예상 시간**: 8-12시간
+### 사용자 스토리 2를 위한 단위 테스트
 
-**Note**: 이 스토리는 US1의 기능을 기반으로 데이터 품질과 완전성에 초점을 맞춥니다.
+- [ ] T071 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/GoogleBooksProviderTests.cs 생성 (Mock HTTP 응답)
+- [ ] T072 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/KakaoBookProviderTests.cs 생성
+- [ ] T073 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/AladinApiProviderTests.cs 생성
+- [ ] T074 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/TMDbProviderTests.cs 생성
+- [ ] T075 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/OMDbProviderTests.cs 생성
+- [ ] T076 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/MusicBrainzProviderTests.cs 생성
+- [ ] T077 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/DiscogsProviderTests.cs 생성
 
-### 데이터 품질 개선 (US2)
+### 사용자 스토리 2를 위한 통합 테스트
 
-- [ ] T073 [P] [US2] 외부 API 응답 검증 로직 추가 (src/CollectionServer.Core/Services/Providers/ - 각 Provider에 필수 필드 검증)
-- [ ] T074 [US2] 불완전한 데이터 처리 로직 (MediaService 내 여러 소스 데이터 병합 전략)
-- [ ] T075 [P] [US2] 이미지 URL 유효성 검증 헬퍼 (src/CollectionServer.Core/Helpers/ImageUrlValidator.cs - URL 형식 검증, 접근 가능 여부 확인)
+- [ ] T078 [US2] tests/CollectionServer.IntegrationTests/ApiTests/ExternalApiIntegrationTests.cs 생성 (실제 API 호출 테스트)
+- [ ] T079 [US2] tests/CollectionServer.IntegrationTests/ApiTests/PriorityFallbackTests.cs 생성 (폴백 전략 테스트)
 
-### DTO 확장 및 필드 매핑 (US2)
+### 사용자 스토리 2를 위한 외부 API Provider 구현
 
-- [ ] T076 [P] [US2] DTO 매핑 확장: 저자 배열 처리 (BookResponse - 여러 저자 지원)
-- [ ] T077 [P] [US2] DTO 매핑 확장: 출연진 배열 처리 (MovieResponse - 주요 출연진 목록)
-- [ ] T078 [P] [US2] DTO 매핑 확장: 트랙 목록 처리 (MusicAlbumResponse - 디스크 번호, 트랙 번호, 제목, 재생 시간)
+- [ ] T080 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/GoogleBooksProvider.cs 구현 (IMediaProvider)
+- [ ] T081 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/KakaoBookProvider.cs 구현
+- [ ] T082 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/AladinApiProvider.cs 구현
+- [ ] T083 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/TMDbProvider.cs 구현
+- [ ] T084 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/OMDbProvider.cs 구현
+- [ ] T085 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Music/MusicBrainzProvider.cs 구현
+- [ ] T086 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Music/DiscogsProvider.cs 구현
 
-### 테스트 (US2)
+### 사용자 스토리 2를 위한 서비스 통합
 
-- [ ] T079 [P] [US2] 단위 테스트: 여러 저자 도서 데이터 매핑 (tests/CollectionServer.UnitTests/DTOs/BookResponseTests.cs)
-- [ ] T080 [P] [US2] 단위 테스트: 긴 출연진 목록 처리 (tests/CollectionServer.UnitTests/DTOs/MovieResponseTests.cs)
-- [ ] T081 [P] [US2] 단위 테스트: 멀티디스크 앨범 트랙 목록 (tests/CollectionServer.UnitTests/DTOs/MusicAlbumResponseTests.cs)
-- [ ] T082 [P] [US2] 통합 테스트: 표지 이미지 URL 반환 검증 (tests/CollectionServer.IntegrationTests/Api/ItemsEndpointTests.cs - 이미지 URL이 null이 아니고 접근 가능)
-- [ ] T083 [P] [US2] 통합 테스트: 누락된 필드 null 처리 (표지 이미지 없는 미디어 조회 시 null 반환, 오류 없음)
+- [ ] T087 [US2] Program.cs에 HttpClientFactory 구성 추가 (각 Provider별 BaseAddress, Timeout 설정)
+- [ ] T088 [US2] Program.cs에 모든 IMediaProvider 구현체 DI 등록 (우선순위 포함)
+- [ ] T089 [US2] ExternalApiSettings에 API 키, Base URL, Priority 설정 추가 (appsettings.json)
+- [ ] T090 [US2] MediaService에 외부 API 우선순위 폴백 로직 추가 (OrderBy Priority)
+- [ ] T091 [US2] MediaService에 외부 API 결과를 데이터베이스에 저장하는 로직 추가
+- [ ] T092 [US2] 외부 API 호출 실패 시 로깅 추가 (Serilog Warning)
+- [ ] T093 [US2] 모든 외부 API 실패 시 404 Not Found 반환 로직 구현
 
-### 데이터 보완 로직 (US2)
+### 사용자 스토리 2를 위한 검증
 
-- [ ] T084 [US2] 우선순위 소스에서 데이터 불완전 시 다음 소스로 보완 로직 구현 (MediaService - 병합 전략)
+- [ ] T094 [US2] User Secrets에 실제 API 키 설정 (dotnet user-secrets set)
+- [ ] T095 [US2] 도서 바코드로 Google Books API 호출 검증 (실제 HTTP 요청)
+- [ ] T096 [US2] 영화 UPC로 TMDb API 호출 검증
+- [ ] T097 [US2] 음악 앨범 바코드로 MusicBrainz API 호출 검증
+- [ ] T098 [US2] 외부 API에서 가져온 데이터가 데이터베이스에 저장되는지 확인
+- [ ] T099 [US2] 동일한 바코드 재요청 시 데이터베이스에서 조회되는지 확인 (외부 API 호출 없음)
 
-**Checkpoint**: 최종 사용자 경험 개선, 완전한 메타데이터 제공, US1 + US2 독립적 기능 확인
+**체크포인트 (Checkpoint)**: 이 시점에서 사용자 스토리 1과 2가 모두 독립적으로 작동해야 합니다. 모든 미디어 유형에 대한 완전한 정보 조회 가능.
 
 ---
 
 ## Phase 5: 사용자 스토리 3 - 오류 처리 및 우아한 폴백 (우선순위: P1)
 
-**목표**: 사용자에게 명확하고 실행 가능한 오류 메시지를 제공하여 문제를 이해하고 수정할 수 있도록 합니다.
+**목표 (Goal)**: 강력한 오류 처리 및 명확한 오류 메시지 제공. 클라이언트가 문제를 이해하고 해결할 수 있도록 지원.
 
-**독립적 테스트**: 잘못된 바코드, 존재하지 않는 미디어, 서비스 장애 시나리오에서 적절한 HTTP 상태 코드와 오류 메시지 반환
+**독립 테스트 (Independent Test)**: 잘못된 바코드 형식, 존재하지 않는 미디어, 외부 API 실패 등 모든 오류 시나리오에 대해 적절한 HTTP 상태 코드와 상세 오류 메시지 반환 확인.
 
-**예상 시간**: 6-8시간
+### 사용자 스토리 3을 위한 단위 테스트
 
-### 오류 케이스 처리 (US3)
+- [ ] T100 [P] [US3] tests/CollectionServer.UnitTests/Middleware/ErrorHandlingMiddlewareTests.cs 생성
+- [ ] T101 [P] [US3] tests/CollectionServer.UnitTests/Services/ErrorResponseTests.cs 생성 (오류 응답 형식 검증)
 
-- [ ] T085 [P] [US3] 잘못된 바코드 형식 검증 및 400 응답 (ItemsEndpoint - BarcodeValidator 사용, ErrorResponse 반환)
-- [ ] T086 [P] [US3] 미디어 미발견 시 404 응답 (MediaService - 모든 Provider 실패 후 MediaNotFoundException)
-- [ ] T087 [P] [US3] 모든 외부 API 실패 시 503 응답 (MediaService - ExternalApiException, 실패한 소스 목록 포함)
-- [ ] T088 [US3] 체크 디지트 오류 바코드 검증 및 구체적 오류 메시지 (BarcodeValidator - 상세 검증 오류 메시지)
+### 사용자 스토리 3을 위한 통합 테스트
 
-### 오류 응답 개선 (US3)
+- [ ] T102 [US3] tests/CollectionServer.IntegrationTests/ApiTests/ErrorHandlingTests.cs 생성 (모든 오류 시나리오 E2E)
+- [ ] T103 [US3] tests/CollectionServer.IntegrationTests/ApiTests/RateLimitingTests.cs 생성 (429 응답 검증)
 
-- [ ] T089 [US3] ErrorResponse details 필드 확장 (src/CollectionServer.Api/DTOs/ErrorResponse.cs - provided, expectedFormats, sourcesChecked 등)
-- [ ] T090 [P] [US3] 바코드 형식 오류 시 예상 형식 안내 (ErrorHandlingMiddleware - InvalidBarcodeException 처리)
+### 사용자 스토리 3을 위한 구현
 
-### 테스트 (US3)
+- [ ] T104 [P] [US3] src/CollectionServer.Api/Models/ErrorResponse.cs 생성 (오류 응답 DTO)
+- [ ] T105 [US3] ErrorHandlingMiddleware에 InvalidBarcodeException 처리 추가 (400 Bad Request)
+- [ ] T106 [US3] ErrorHandlingMiddleware에 NotFoundException 처리 추가 (404 Not Found)
+- [ ] T107 [US3] ErrorHandlingMiddleware에 RateLimitExceededException 처리 추가 (429 Too Many Requests)
+- [ ] T108 [US3] ErrorHandlingMiddleware에 일반 Exception 처리 추가 (500 Internal Server Error)
+- [ ] T109 [US3] ErrorHandlingMiddleware에 한국어 오류 메시지 추가
+- [ ] T110 [US3] Program.cs의 Minimal API 엔드포인트에 Result 타입 반환 추가 (TypedResults 사용)
+- [ ] T111 [US3] OpenAPI 스키마에 모든 오류 응답 명세 추가 (.Produces<ErrorResponse>)
+- [ ] T112 [US3] BarcodeValidator에서 상세 검증 오류 메시지 생성 (예상 형식 설명 포함)
+- [ ] T113 [US3] MediaService에서 외부 API 실패 시 상세 로그 추가 (어떤 소스가 실패했는지)
 
-- [ ] T091 [P] [US3] 단위 테스트: 잘못된 바코드 형식 검증 (tests/CollectionServer.UnitTests/Validators/BarcodeValidatorTests.cs - 5자리, 글자 포함, 체크섬 오류 등)
-- [ ] T092 [P] [US3] 통합 테스트: 400 Bad Request 응답 (tests/CollectionServer.IntegrationTests/Api/ItemsEndpointTests.cs - 잘못된 바코드로 요청, 오류 메시지 검증)
-- [ ] T093 [P] [US3] 통합 테스트: 404 Not Found 응답 (tests/CollectionServer.IntegrationTests/Api/ItemsEndpointTests.cs - 유효하지만 존재하지 않는 바코드)
-- [ ] T094 [P] [US3] 통합 테스트: 503 Service Unavailable (tests/CollectionServer.IntegrationTests/Api/ItemsEndpointTests.cs - 외부 API 모킹하여 모두 실패 시뮬레이션)
+### 사용자 스토리 3을 위한 검증
 
-### 로깅 개선 (US3)
+- [ ] T114 [US3] 잘못된 바코드 형식 (5자리)으로 400 응답 및 오류 메시지 확인
+- [ ] T115 [US3] 체크섬 오류가 있는 바코드로 400 응답 확인
+- [ ] T116 [US3] 존재하지 않는 유효한 바코드로 404 응답 확인 (모든 소스 조회 후)
+- [ ] T117 [US3] Rate Limit 초과 시 429 응답 및 Retry-After 헤더 확인
+- [ ] T118 [US3] 데이터베이스 연결 실패 시 503 Service Unavailable 응답 확인
+- [ ] T119 [US3] 모든 오류 응답이 OpenAPI 스키마와 일치하는지 확인
 
-- [ ] T095 [US3] 오류 케이스별 구조화된 로그 추가 (MediaService, Providers - Warning/Error 레벨, 컨텍스트 정보 포함)
-
-**Checkpoint**: 강력한 오류 처리, 명확한 사용자 피드백, US1 + US2 + US3 독립적 기능 확인
+**체크포인트 (Checkpoint)**: 이제 모든 오류 시나리오가 적절하게 처리되고 명확한 메시지를 반환합니다.
 
 ---
 
 ## Phase 6: 사용자 스토리 4 - Database-First 아키텍처를 통한 성능 최적화 (우선순위: P1)
 
-**목표**: Database-First 전략으로 외부 API 호출을 최소화하고 응답 시간을 개선합니다.
+**목표 (Goal)**: 데이터베이스 우선 조회를 통한 성능 최적화. 캐싱 효과로 응답 시간 단축 및 외부 API 의존성 감소.
 
-**독립적 테스트**: 동일 바코드 재요청 시 데이터베이스에서 < 50ms 응답, 외부 API 호출 없음
+**독립 테스트 (Independent Test)**: 동일한 바코드를 여러 번 요청했을 때 첫 요청은 외부 API 호출(>1초), 후속 요청은 데이터베이스에서 조회(<500ms) 확인.
 
-**예상 시간**: 8-10시간
+### 사용자 스토리 4를 위한 단위 테스트
 
-**Note**: US1에서 이미 기본 Database-First 로직 구현, 이 스토리는 최적화와 성능 검증에 초점
+- [ ] T120 [P] [US4] tests/CollectionServer.UnitTests/Repositories/DatabasePerformanceTests.cs 생성 (쿼리 성능 테스트)
+- [ ] T121 [P] [US4] tests/CollectionServer.UnitTests/Services/CachingLogicTests.cs 생성
 
-### 성능 최적화 (US4)
+### 사용자 스토리 4를 위한 통합 테스트
 
-- [ ] T096 [P] [US4] EF Core Compiled Queries 적용 (MediaRepository - GetByBarcodeAsync 컴파일된 쿼리)
-- [ ] T097 [P] [US4] AsNoTracking 최적화 (MediaRepository - 읽기 전용 쿼리)
-- [ ] T098 [US4] 인덱스 성능 검증 및 쿼리 플랜 분석 (PostgreSQL EXPLAIN ANALYZE)
-- [ ] T099 [US4] 동시 요청 중복 방지 락 메커니즘 최적화 (MediaService - SemaphoreSlim 또는 분산 락)
+- [ ] T122 [US4] tests/CollectionServer.IntegrationTests/PerformanceTests/ResponseTimeTests.cs 생성 (응답 시간 측정)
+- [ ] T123 [US4] tests/CollectionServer.IntegrationTests/PerformanceTests/ConcurrentRequestTests.cs 생성 (동시 요청 처리)
 
-### 캐싱 전략 (US4)
+### 사용자 스토리 4를 위한 최적화 구현
 
-- [ ] T100 [US4] 데이터베이스 캐싱 효과 모니터링 로직 추가 (MediaService - DB 히트 vs 외부 API 호출 메트릭)
-- [ ] T101 [P] [US4] CreatedAt/UpdatedAt 자동 설정 검증 (MediaRepository - 타임스탬프 정확성)
+- [ ] T124 [US4] MediaRepository에 Compiled Queries 추가 (EF.CompileAsyncQuery)
+- [ ] T125 [US4] MediaRepository에 AsNoTracking 추가 (읽기 전용 쿼리)
+- [ ] T126 [US4] ApplicationDbContext에 인덱스 추가 (Barcode UNIQUE INDEX)
+- [ ] T127 [US4] MediaService에 동시 요청 처리 로직 추가 (SemaphoreSlim으로 중복 호출 방지)
+- [ ] T128 [US4] Program.cs에 데이터베이스 연결 풀 설정 추가 (MaxPoolSize, Timeout)
+- [ ] T129 [US4] Serilog에 응답 시간 로깅 추가 (데이터베이스 vs 외부 API 구분)
+- [ ] T130 [US4] ApplicationDbContext에 UpdatedAt 자동 업데이트 트리거 설정 (PostgreSQL)
 
-### 성능 테스트 (US4)
+### 사용자 스토리 4를 위한 검증
 
-- [ ] T102 [P] [US4] 성능 테스트: 데이터베이스 히트 응답 시간 (tests/CollectionServer.IntegrationTests/Performance/DatabasePerformanceTests.cs - p95 < 50ms 검증)
-- [ ] T103 [P] [US4] 성능 테스트: 외부 API 초기 조회 응답 시간 (tests/CollectionServer.IntegrationTests/Performance/ExternalApiPerformanceTests.cs - p95 < 2초 검증)
-- [ ] T104 [P] [US4] 성능 테스트: 동시 요청 처리 (tests/CollectionServer.IntegrationTests/Performance/ConcurrencyTests.cs - 동일 바코드 100개 동시 요청, 외부 API 1회만 호출)
-- [ ] T105 [US4] 부하 테스트: 1000 req/s 처리 (캐시된 요청 기준, 외부 도구 사용)
+- [ ] T131 [US4] 새로운 바코드 조회 시 응답 시간 측정 (외부 API 호출)
+- [ ] T132 [US4] 동일한 바코드 재조회 시 응답 시간 측정 (데이터베이스 조회)
+- [ ] T133 [US4] 응답 시간이 목표치 내인지 확인 (DB: <500ms, API: <2초)
+- [ ] T134 [US4] 동시에 100개 요청 전송 시 모두 성공적으로 처리되는지 확인
+- [ ] T135 [US4] Serilog 로그에서 데이터베이스 히트 vs API 호출 비율 확인
 
-### 모니터링 (US4)
-
-- [ ] T106 [US4] 응답 시간 로깅 추가 (Middleware - 각 요청의 처리 시간 기록)
-- [ ] T107 [US4] 외부 API 호출 빈도 로깅 (Providers - 호출 횟수 및 소스별 성공률)
-
-**Checkpoint**: 성능 목표 달성, Database-First 효과 검증, US1-US4 독립적 기능 확인
+**체크포인트 (Checkpoint)**: Database-First 아키텍처가 완전히 작동하며 성능 목표를 달성합니다.
 
 ---
 
 ## Phase 7: 사용자 스토리 5 - 외부 데이터 소스 우선순위 및 폴백 (우선순위: P1)
 
-**목표**: 우선순위 기반 폴백 메커니즘으로 높은 데이터 가용성과 품질을 보장합니다.
+**목표 (Goal)**: 각 미디어 유형에 대해 최적의 외부 API를 우선순위에 따라 조회하고, 실패 시 자동으로 다음 소스로 폴백.
 
-**독립적 테스트**: 특정 외부 API 실패 시뮬레이션 시 자동으로 다음 우선순위 소스로 폴백, 최종적으로 데이터 반환 또는 404
+**독립 테스트 (Independent Test)**: 첫 번째 우선순위 API를 Mock으로 실패시켰을 때 두 번째 우선순위 API로 자동 폴백하여 정상 응답 반환 확인.
 
-**예상 시간**: 6-8시간
+### 사용자 스토리 5를 위한 단위 테스트
 
-**Note**: US1에서 기본 폴백 로직 구현, 이 스토리는 우선순위 정확성과 폴백 메커니즘 검증에 초점
+- [ ] T136 [P] [US5] tests/CollectionServer.UnitTests/Services/PriorityStrategyTests.cs 생성 (우선순위 로직 테스트)
+- [ ] T137 [P] [US5] tests/CollectionServer.UnitTests/Services/FallbackLogicTests.cs 생성
 
-### 우선순위 관리 (US5)
+### 사용자 스토리 5를 위한 통합 테스트
 
-- [ ] T108 [US5] Provider 우선순위 설정 검증 (각 Provider의 Priority 속성 확인: GoogleBooks=1, Kakao=2, Aladin=3, TMDb=1, OMDb=2, MusicBrainz=1, Discogs=2)
-- [ ] T109 [US5] MediaService 폴백 로직 검증 (우선순위 순서대로 Provider 시도, 첫 성공 시 중단)
+- [ ] T138 [US5] tests/CollectionServer.IntegrationTests/ApiTests/MultiSourceFallbackTests.cs 생성 (여러 소스 폴백 시나리오)
 
-### 폴백 시나리오 테스트 (US5)
+### 사용자 스토리 5를 위한 구현
 
-- [ ] T110 [P] [US5] 단위 테스트: 첫 번째 Provider 실패 시 두 번째 시도 (tests/CollectionServer.UnitTests/Services/MediaServiceTests.cs - Moq로 GoogleBooks 실패, Kakao 성공 모킹)
-- [ ] T111 [P] [US5] 단위 테스트: 모든 Provider 실패 시 404 (tests/CollectionServer.UnitTests/Services/MediaServiceTests.cs - 모든 Provider null 반환)
-- [ ] T112 [P] [US5] 통합 테스트: 도서 우선순위 폴백 (tests/CollectionServer.IntegrationTests/Api/FallbackTests.cs - GoogleBooks 모킹 실패, Kakao에서 데이터 수신)
-- [ ] T113 [P] [US5] 통합 테스트: 영화 우선순위 폴백 (tests/CollectionServer.IntegrationTests/Api/FallbackTests.cs - TMDb 실패, OMDb 성공)
-- [ ] T114 [P] [US5] 통합 테스트: 음악 우선순위 폴백 (tests/CollectionServer.IntegrationTests/Api/FallbackTests.cs - MusicBrainz 실패, Discogs 성공)
+- [ ] T139 [US5] IMediaProvider에 Priority 속성 추가 (int, 낮을수록 높은 우선순위)
+- [ ] T140 [US5] 각 Provider 구현체에 Priority 값 설정 (GoogleBooks: 1, Kakao: 2, Aladin: 3...)
+- [ ] T141 [US5] MediaService에 Provider 정렬 로직 추가 (_providers.OrderBy(p => p.Priority))
+- [ ] T142 [US5] MediaService에 폴백 루프 구현 (foreach provider, try-catch)
+- [ ] T143 [US5] 각 Provider에 HTTP Timeout 설정 (10초)
+- [ ] T144 [US5] 각 Provider에 실패 시 null 반환 로직 추가 (예외 대신)
+- [ ] T145 [US5] MediaService에 모든 소스 실패 시 로깅 추가 (어떤 소스들을 시도했는지)
+- [ ] T146 [US5] ExternalApiSettings에 각 API별 우선순위 구성 추가 (appsettings.json)
 
-### 불완전 데이터 처리 (US5)
+### 사용자 스토리 5를 위한 검증
 
-- [ ] T115 [US5] Provider 응답 완전성 점수 로직 구현 (각 Provider - 필수/선택 필드 채움 비율 계산)
-- [ ] T116 [US5] 불완전한 데이터 시 다음 소스 시도 옵션 구현 (MediaService - 완전성 임계값 설정)
+- [ ] T147 [US5] 도서 조회 시 Google Books → Kakao → Aladin 순서로 시도하는지 로그 확인
+- [ ] T148 [US5] Google Books API를 Mock으로 실패시키고 Kakao에서 성공하는지 확인
+- [ ] T149 [US5] 모든 도서 API 실패 시 404 Not Found 반환 확인
+- [ ] T150 [US5] 영화 조회 시 TMDb → OMDb 순서 확인
+- [ ] T151 [US5] 음악 조회 시 MusicBrainz → Discogs 순서 확인
 
-### 로깅 및 모니터링 (US5)
-
-- [ ] T117 [US5] 폴백 발생 시 로깅 추가 (MediaService - 실패한 Provider 및 시도 순서 기록)
-- [ ] T118 [US5] 외부 API 성공률 메트릭 추가 (Providers - 소스별 호출 성공/실패 비율)
-
-**Checkpoint**: 강력한 폴백 메커니즘, 높은 데이터 가용성, US1-US5 독립적 기능 확인
+**체크포인트 (Checkpoint)**: 우선순위 기반 폴백 전략이 모든 미디어 유형에 대해 작동합니다.
 
 ---
 
 ## Phase 8: 사용자 스토리 6 - 속도 제한을 통한 공정한 API 사용 (우선순위: P2)
 
-**목표**: 속도 제한을 구현하여 악용을 방지하고 모든 사용자에게 공정한 접근을 보장합니다.
+**목표 (Goal)**: Rate Limiting을 통해 API 악용 방지 및 모든 사용자에게 공정한 접근 보장.
 
-**독립적 테스트**: 속도 제한을 초과하는 요청 시 429 Too Many Requests 응답 및 Retry-After 헤더 반환
+**독립 테스트 (Independent Test)**: 1분 내에 100개 이상의 요청 전송 시 101번째 요청부터 429 Too Many Requests 응답 확인. Retry-After 헤더 포함 확인.
 
-**예상 시간**: 4-6시간
+### 사용자 스토리 6을 위한 단위 테스트
 
-### Rate Limiting 구현 (US6)
+- [ ] T152 [P] [US6] tests/CollectionServer.UnitTests/Middleware/RateLimitingTests.cs 생성
 
-- [ ] T119 [US6] ASP.NET Core Rate Limiter 구성 (src/CollectionServer.Api/Program.cs - FixedWindowLimiter, 100 req/min)
-- [ ] T120 [US6] ItemsEndpoint에 Rate Limiting 적용 (RequireRateLimiting 속성 추가)
-- [ ] T121 [US6] 429 응답 시 Retry-After 헤더 추가 (RateLimiting 미들웨어 커스터마이징)
+### 사용자 스토리 6을 위한 통합 테스트
 
-### 테스트 (US6)
+- [ ] T153 [US6] tests/CollectionServer.IntegrationTests/ApiTests/RateLimitEnforcementTests.cs 생성 (실제 Rate Limit 검증)
 
-- [ ] T122 [P] [US6] 단위 테스트: Rate Limiter 설정 검증 (tests/CollectionServer.UnitTests/Middleware/RateLimitingTests.cs - 윈도우 크기, 제한 수 확인)
-- [ ] T123 [P] [US6] 통합 테스트: 속도 제한 내 요청 정상 처리 (tests/CollectionServer.IntegrationTests/Api/RateLimitingTests.cs - 99개 요청 모두 200 응답)
-- [ ] T124 [P] [US6] 통합 테스트: 속도 제한 초과 시 429 응답 (tests/CollectionServer.IntegrationTests/Api/RateLimitingTests.cs - 101번째 요청 429, Retry-After 헤더 확인)
-- [ ] T125 [US6] 통합 테스트: 속도 제한 윈도우 리셋 검증 (1분 대기 후 다시 요청 가능)
+### 사용자 스토리 6을 위한 구현
 
-### 설정 및 문서화 (US6)
+- [ ] T154 [US6] Program.cs에 AddRateLimiter 구성 확인 (이미 Phase 2에서 추가됨)
+- [ ] T155 [US6] Rate Limiting 정책 세부 조정 (PermitLimit: 100, Window: 1분, QueueLimit: 10)
+- [ ] T156 [US6] Rate Limit 초과 시 커스텀 응답 메시지 추가 (한국어)
+- [ ] T157 [US6] Rate Limit 설정을 appsettings.json으로 외부화
+- [ ] T158 [US6] Serilog에 Rate Limit 이벤트 로깅 추가
 
-- [ ] T126 [P] [US6] Rate Limiting 설정 appsettings.json에 외부화 (PermitLimit, Window 구성 가능)
-- [ ] T127 [P] [US6] Rate Limiting 정책 API 문서에 추가 (contracts/openapi.yaml - 429 응답 예제)
+### 사용자 스토리 6을 위한 검증
 
-**Checkpoint**: 속도 제한 작동, 악용 방지, US1-US6 독립적 기능 확인
+- [ ] T159 [US6] 1분 내 100개 요청 전송하여 모두 성공하는지 확인
+- [ ] T160 [US6] 101번째 요청에서 429 응답 확인
+- [ ] T161 [US6] 429 응답에 Retry-After 헤더가 포함되는지 확인
+- [ ] T162 [US6] 1분 경과 후 다시 요청 가능한지 확인
+
+**체크포인트 (Checkpoint)**: Rate Limiting이 정상 작동하며 악용을 방지합니다.
 
 ---
 
-## Phase 9: 마무리 및 교차 관심사 (Sprint 3)
+## Phase 9: 다듬기 및 교차 관심사 (Polish & Cross-Cutting Concerns)
 
-**목적**: 모든 사용자 스토리에 영향을 미치는 개선사항
-
-**예상 시간**: 12-16시간
+**목적 (Purpose)**: 여러 사용자 스토리에 영향을 미치는 개선사항 및 프로덕션 준비
 
 ### 문서화
 
-- [ ] T128 [P] README.md 작성 (리포지토리 루트 - 프로젝트 개요, 기술 스택, 빠른 시작)
-- [ ] T129 [P] API 사용 가이드 작성 (docs/api-guide.md - 엔드포인트, 요청/응답 예제, 오류 코드)
-- [ ] T130 [P] 배포 가이드 작성 (docs/deployment.md - Docker, Kubernetes, 환경 변수 설정)
-- [ ] T131 [P] 외부 API 키 발급 가이드 작성 (docs/external-apis.md - 각 API 키 발급 방법 및 제한 사항)
+- [ ] T163 [P] README.md 업데이트 (실행 방법, API 엔드포인트, 예제)
+- [ ] T164 [P] API 사용 가이드 작성 (docs/api-guide.md)
+- [ ] T165 [P] 배포 가이드 작성 (docs/deployment.md, Podman 포함)
+- [ ] T166 [P] quickstart.md 검증 실행 (처음부터 끝까지 테스트)
 
 ### 코드 품질
 
-- [ ] T132 [P] 코드 주석 및 XML 문서화 추가 (공개 API 인터페이스 및 주요 클래스)
-- [ ] T133 [P] 린트 및 코드 스타일 검증 (dotnet format 실행, 경고 수정)
-- [ ] T134 리팩토링: 중복 코드 제거 및 DRY 원칙 적용
+- [ ] T167 코드 리뷰 및 리팩토링 (중복 제거, 명명 규칙 통일)
+- [ ] T168 [P] XML 문서 주석 추가 (공개 API, 복잡한 로직에 한국어 주석)
+- [ ] T169 [P] EditorConfig 파일 생성 (.NET 코딩 스타일)
+- [ ] T170 [P] 단위 테스트 커버리지 확인 (최소 80% 목표)
 
-### 보안 강화
+### 보안
 
-- [ ] T135 [P] User Secrets 사용 검증 (개발 환경에서 appsettings.json에 API 키 노출되지 않도록)
-- [ ] T136 [P] HTTPS 강제 설정 (프로덕션 환경, Program.cs - UseHttpsRedirection)
-- [ ] T137 [P] CORS 정책 구성 (필요 시, Program.cs - AddCors)
-- [ ] T138 SQL Injection 방지 검증 (EF Core 파라미터화된 쿼리 사용 확인)
+- [ ] T171 User Secrets 사용 가이드 작성 (로컬 개발용)
+- [ ] T172 [P] 환경 변수로 민감 정보 주입 방법 문서화 (프로덕션용)
+- [ ] T173 SQL Injection 방지 검증 (EF Core 파라미터화 쿼리 사용)
+- [ ] T174 [P] HTTPS 강제 적용 설정 (프로덕션 환경)
 
-### 성능 최적화
+### 성능 및 모니터링
 
-- [ ] T139 [P] 응답 압축 활성화 (Program.cs - AddResponseCompression, gzip/brotli)
-- [ ] T140 [P] HTTP/2 지원 활성화 (Kestrel 설정)
+- [ ] T175 [P] Application Insights 또는 Prometheus 메트릭 추가 (선택)
+- [ ] T176 데이터베이스 인덱스 효율성 검증 (EXPLAIN ANALYZE)
+- [ ] T177 [P] Serilog 구조화된 로깅 검증 (JSON 형식, 필요한 필드 포함)
+- [ ] T178 메모리 및 CPU 사용량 프로파일링
 
-### CI/CD 파이프라인
+### 컨테이너화 및 배포
 
-- [ ] T141 GitHub Actions 워크플로우 생성 (.github/workflows/ci.yml - 빌드, 테스트, 린트)
-- [ ] T142 Docker 이미지 빌드 및 푸시 워크플로우 (.github/workflows/docker-publish.yml - GitHub Container Registry 또는 Docker Hub)
-- [ ] T143 [P] 프로덕션 배포 스크립트 (scripts/deploy.sh - 환경 변수 주입, 마이그레이션 적용, 서비스 시작)
-
-### 모니터링 및 관찰성
-
-- [ ] T144 [P] 메트릭 엔드포인트 추가 (GET /metrics - Prometheus 형식, 요청 카운트, 응답 시간, 오류율)
-- [ ] T145 [P] 분산 추적 설정 (OpenTelemetry 또는 Application Insights - 요청 흐름 추적)
+- [ ] T179 Containerfile 빌드 테스트 (podman build)
+- [ ] T180 podman-compose로 전체 스택 실행 테스트 (PostgreSQL + API)
+- [ ] T181 컨테이너 이미지 크기 최적화 (멀티 스테이지 빌드 검증)
+- [ ] T182 [P] 컨테이너 헬스 체크 구성 (HEALTHCHECK 명령)
 
 ### 최종 검증
 
-- [ ] T146 quickstart.md 가이드 완전 실행 검증 (새 환경에서 처음부터 설정, 첫 API 요청까지)
-- [ ] T147 전체 테스트 스위트 실행 (dotnet test - 모든 단위, 통합, 계약 테스트 통과)
-- [ ] T148 OpenAPI 스키마 검증 (contracts/openapi.yaml과 실제 API 응답 일치 확인)
-- [ ] T149 성능 벤치마크 실행 (데이터베이스 히트 < 50ms, 외부 API < 2초 목표 달성 확인)
-
-### 추가 기능 (선택 사항)
-
-- [ ] T150 [P] 헬스 체크 확장 (외부 API 연결 상태 포함)
-- [ ] T151 [P] 관리자 엔드포인트 (캐시 클리어, 통계 조회 - 인증 필요)
-
-**Checkpoint**: 프로덕션 준비 완료, 문서화 완성, 모든 테스트 통과
+- [ ] T183 전체 통합 테스트 스위트 실행 (dotnet test)
+- [ ] T184 Swagger UI에서 모든 엔드포인트 수동 테스트
+- [ ] T185 OpenAPI 스키마 검증 (Spectral 또는 Swagger Editor)
+- [ ] T186 프로덕션 환경 설정 검토 (appsettings.Production.json)
+- [ ] T187 [P] 장애 시나리오 테스트 (데이터베이스 다운, 외부 API 다운)
+- [ ] T188 quickstart.md 가이드대로 처음부터 설치 후 동작 확인
 
 ---
 
-## 의존성 및 실행 순서
+## 의존성 및 실행 순서 (Dependencies & Execution Order)
 
-### 페이즈 의존성
+### 단계 의존성 (Phase Dependencies)
 
-- **Phase 1 (프로젝트 설정)**: 의존성 없음 - 즉시 시작 가능
-- **Phase 2 (기반 인프라)**: Phase 1 완료 필요 - **모든 사용자 스토리 차단**
-- **Phase 3-8 (사용자 스토리)**: Phase 2 완료 필요
-  - 사용자 스토리는 병렬 진행 가능 (팀 용량 허용 시)
-  - 또는 우선순위 순서대로 순차 진행 (P1 → P2)
-- **Phase 9 (마무리)**: 모든 원하는 사용자 스토리 완료 후
+```
+Phase 1 (설정)
+    ↓
+Phase 2 (기반) ← 모든 사용자 스토리를 차단
+    ↓
+Phase 3 (US1) ← MVP 🎯
+    ↓
+Phase 4 (US2) ← 외부 API 통합
+    ↓
+Phase 5 (US3) ← 오류 처리
+    ↓
+Phase 6 (US4) ← 성능 최적화
+    ↓
+Phase 7 (US5) ← 폴백 전략
+    ↓
+Phase 8 (US6) ← Rate Limiting
+    ↓
+Phase 9 (다듬기)
+```
 
 ### 사용자 스토리 의존성
 
-- **US1 (개발자 미디어 조회)**: Phase 2 완료 후 시작 - 다른 스토리 의존성 없음
-- **US2 (최종 사용자 발견)**: Phase 2 완료 후 시작 - US1과 병렬 가능하나 US1 기능 기반 확장
-- **US3 (오류 처리)**: Phase 2 완료 후 시작 - US1 기본 엔드포인트 있어야 함
-- **US4 (성능 최적화)**: Phase 2 완료 후 시작 - US1 Database-First 로직 구현 필요
-- **US5 (우선순위 폴백)**: Phase 2 완료 후 시작 - US1 폴백 로직 구현 필요
-- **US6 (속도 제한)**: Phase 2 완료 후 시작 - 독립적, US1 엔드포인트만 필요
+- **사용자 스토리 1 (P1)**: Phase 2 이후 시작 가능 - 다른 스토리에 대한 의존성 없음
+- **사용자 스토리 2 (P1)**: US1에 의존 (MediaService 기반 필요)
+- **사용자 스토리 3 (P1)**: US1, US2에 의존 (오류 시나리오 테스트 위해)
+- **사용자 스토리 4 (P1)**: US1, US2에 의존 (성능 비교 위해)
+- **사용자 스토리 5 (P1)**: US2에 의존 (외부 API Provider 필요)
+- **사용자 스토리 6 (P2)**: 독립적 (기반 작업만 필요)
 
-### 각 사용자 스토리 내
+### 각 사용자 스토리 내 순서
 
-- 테스트 먼저 작성 → 실패 확인 → 구현 → 테스트 통과
-- 모델 → 서비스 → 엔드포인트 순서
-- 핵심 구현 → 통합 → 독립적 검증
+1. 계약 테스트 (Contract Tests) - 먼저 작성, 실패 확인
+2. 단위 테스트 (Unit Tests) - 먼저 작성, 실패 확인
+3. 통합 테스트 (Integration Tests) - 먼저 작성, 실패 확인
+4. 모델/엔티티 (Models/Entities) - 병렬 실행 가능 [P]
+5. 서비스 구현 (Services) - 모델 이후
+6. 엔드포인트 구현 (Endpoints) - 서비스 이후
+7. 검증 (Validation) - 구현 완료 후
 
-### 병렬 실행 기회
+### 병렬 기회 (Parallel Opportunities)
 
-- Phase 1: T003-T010 (프로젝트 생성), T011-T013 (패키지 설치), T015-T019 (환경 설정) 모두 병렬 가능
-- Phase 2: T022-T024 (엔티티), T027-T030 (Configuration), T041 (예외), 각 그룹 내 병렬 가능
-- Phase 3 (US1): T050-T052 (테스트), T053-T059 (Providers), T063-T066 (DTO), T069-T071 (통합 테스트) 병렬 가능
-- Phase 2 완료 후 US1, US2, US3, US4, US5, US6를 다른 개발자가 동시 진행 가능
-
----
-
-## Phase별 병렬 실행 예제
-
-### Phase 1: 프로젝트 설정
-
+#### Phase 1 (설정)
 ```bash
-# 병렬 실행 가능:
-T003: API 프로젝트 생성
-T004: Core 프로젝트 생성
-T005: Infrastructure 프로젝트 생성
-T006-T008: 테스트 프로젝트들 생성
+# 동시 실행 가능:
+T003, T004, T005  # 3개 프로젝트 생성
+T006, T007, T008  # 3개 테스트 프로젝트 생성
+T010, T011, T012, T013, T014, T015, T016  # 패키지 및 설정 파일
 ```
 
-### Phase 2: 기반 인프라
-
+#### Phase 2 (기반)
 ```bash
-# 엔티티 생성 (병렬):
-T022: Book 엔티티
-T023: Movie 엔티티
-T024: MusicAlbum 엔티티
-
-# EF Core Configuration (병렬):
-T027: BookConfiguration
-T028: MovieConfiguration
-T029: MusicAlbumConfiguration
+# 동시 실행 가능:
+T017, T018  # Enum 생성
+T019, T020, T021, T022, T023  # 엔티티 생성
+T024, T025, T026  # 예외 클래스
+T027, T028, T029  # 인터페이스
+T031, T032, T033, T034  # EF Core Configuration
 ```
 
-### Phase 3: 사용자 스토리 1
-
+#### Phase 3 (US1)
 ```bash
-# Provider 구현 (병렬 - 7개 작업):
-T053: GoogleBooksProvider
-T054: KakaoBookProvider
-T055: AladinProvider
-T056: TMDbProvider
-T057: OMDbProvider
-T058: MusicBrainzProvider
-T059: DiscogsProvider
+# 동시 실행 가능:
+T050, T051  # 계약 테스트
+T052, T053, T054  # 단위 테스트
+```
 
-# DTO 생성 (병렬):
-T064: BookResponse
-T065: MovieResponse
-T066: MusicAlbumResponse
+#### Phase 4 (US2)
+```bash
+# 동시 실행 가능:
+T071, T072, T073, T074, T075, T076, T077  # Provider 단위 테스트
+T080, T081, T082, T083, T084, T085, T086  # Provider 구현
 ```
 
 ---
 
-## 구현 전략
+## 병렬 실행 예시
 
-### MVP 우선 (사용자 스토리 1만)
+### 사용자 스토리 1 병렬 작업
 
-1. Phase 1: 프로젝트 설정 완료
-2. Phase 2: 기반 인프라 완료 (**중요 - 모든 스토리 차단**)
-3. Phase 3: 사용자 스토리 1 완료
-4. **중단 및 검증**: US1 독립적 테스트
-5. 필요 시 배포/데모
+```bash
+# 동시에 작업 가능:
+작업 T050: "계약 테스트 - Swagger 스키마 검증"
+작업 T051: "계약 테스트 - 엔드포인트 응답 형식"
+작업 T052: "단위 테스트 - BarcodeValidator"
+작업 T053: "단위 테스트 - MediaService"
+작업 T054: "단위 테스트 - MediaRepository"
+```
 
-### 점진적 전달
+### 사용자 스토리 2 병렬 작업
 
-1. Setup + Foundational → 기반 준비
-2. US1 추가 → 독립 테스트 → 배포/데모 (MVP!)
-3. US2 추가 → 독립 테스트 → 배포/데모
-4. US3 추가 → 독립 테스트 → 배포/데모
-5. US4 추가 → 독립 테스트 → 배포/데모
-6. US5 추가 → 독립 테스트 → 배포/데모
-7. US6 추가 → 독립 테스트 → 배포/데모
-8. 각 스토리가 이전 스토리를 손상시키지 않고 가치 추가
+```bash
+# 동시에 작업 가능:
+작업 T080: "GoogleBooksProvider 구현"
+작업 T081: "KakaoBookProvider 구현"
+작업 T082: "AladinApiProvider 구현"
+작업 T083: "TMDbProvider 구현"
+작업 T084: "OMDbProvider 구현"
+작업 T085: "MusicBrainzProvider 구현"
+작업 T086: "DiscogsProvider 구현"
+```
+
+---
+
+## 구현 전략 (Implementation Strategy)
+
+### MVP 우선 (최소 기능 제품)
+
+**목표**: 가능한 빠르게 가치 제공
+
+```
+1. Phase 1 완료 (T001-T016): 프로젝트 설정
+2. Phase 2 완료 (T017-T049): 기반 인프라
+3. Phase 3 완료 (T050-T070): 사용자 스토리 1
+   - 바코드로 미디어 조회 (외부 API 없이 데이터베이스만)
+   - 기본 검증 및 오류 처리
+4. 검증 및 데모
+5. Phase 4 추가 (T071-T099): 외부 API 통합
+6. 재검증 및 배포
+```
+
+**MVP 체크리스트**:
+- ✅ GET /items/{barcode} 엔드포인트 작동
+- ✅ ISBN-13 검증
+- ✅ 데이터베이스에 저장된 미디어 조회 가능
+- ✅ 기본 오류 처리 (400, 404)
+- ✅ Swagger UI 접근 가능
+- ✅ 헬스 체크 엔드포인트 작동
+
+### 점진적 제공 (Incremental Delivery)
+
+각 단계 완료 후 배포 가능:
+
+1. **Phase 3 완료** → MVP 배포 (내부 데이터베이스 조회만)
+2. **Phase 4 완료** → 외부 API 통합 버전 배포 (도서, 영화, 음악 모두 지원)
+3. **Phase 5 완료** → 강화된 오류 처리 버전
+4. **Phase 6 완료** → 성능 최적화 버전
+5. **Phase 7 완료** → 폴백 전략 강화 버전
+6. **Phase 8 완료** → Rate Limiting 추가 버전
+7. **Phase 9 완료** → 프로덕션 준비 완료
 
 ### 병렬 팀 전략
 
-여러 개발자가 있는 경우:
+**3명의 개발자가 있다면:**
 
-1. 팀이 Setup + Foundational을 함께 완료
-2. Foundational 완료 후:
-   - 개발자 A: 사용자 스토리 1 (우선순위)
-   - 개발자 B: 사용자 스토리 2
-   - 개발자 C: 사용자 스토리 3
-   - 개발자 D: 사용자 스토리 6 (독립적)
-3. 스토리들이 독립적으로 완료 및 통합
-
----
-
-## 요약
-
-### 총 작업 수: 151개 작업
-
-### 사용자 스토리별 작업 수
-
-- **Phase 1 (설정)**: 19개 작업 (4-6시간)
-- **Phase 2 (기반 인프라)**: 29개 작업 (12-16시간) - **모든 스토리 차단**
-- **Phase 3 (US1)**: 23개 작업 (20-24시간) 🎯 **MVP**
-- **Phase 4 (US2)**: 12개 작업 (8-12시간)
-- **Phase 5 (US3)**: 11개 작업 (6-8시간)
-- **Phase 6 (US4)**: 12개 작업 (8-10시간)
-- **Phase 7 (US5)**: 11개 작업 (6-8시간)
-- **Phase 8 (US6)**: 9개 작업 (4-6시간)
-- **Phase 9 (마무리)**: 25개 작업 (12-16시간)
-
-### 병렬 실행 기회
-
-- Phase 1: 16개 작업 병렬 가능 ([P] 태그)
-- Phase 2: 17개 작업 병렬 가능
-- Phase 3 (US1): 16개 작업 병렬 가능
-- Phase 4-8: 각 사용자 스토리 내 테스트, DTO, Provider 병렬 가능
-- **Phase 2 완료 후 모든 사용자 스토리(US1-US6) 병렬 진행 가능**
-
-### 독립적 테스트 기준
-
-- **US1**: 유효한 바코드로 API 호출 → 200 OK + 완전한 JSON 응답
-- **US2**: 다양한 미디어 타입 조회 → 모든 메타데이터 필드 정확히 반환
-- **US3**: 잘못된 입력/미발견/장애 → 적절한 HTTP 상태 + 명확한 오류 메시지
-- **US4**: 재요청 → <50ms 응답 (DB 히트), 외부 API 호출 없음
-- **US5**: 첫 API 실패 → 자동 폴백 → 최종 데이터 반환 또는 404
-- **US6**: 101번째 요청 → 429 Too Many Requests + Retry-After 헤더
-
-### 제안 MVP 범위
-
-**MVP = Phase 1 + Phase 2 + Phase 3 (US1)**
-
-- 프로젝트 설정 및 기반 인프라
-- 기본 미디어 조회 기능
-- 7개 외부 API 통합
-- Database-First 캐싱
-- 기본 오류 처리
-- Swagger/OpenAPI 문서
-
-**예상 시간**: 36-46시간 (1-2주, 1-2명)
-
-이후 US2-US6를 점진적으로 추가하여 기능 확장
+1. **Phase 1-2**: 모두 함께 기반 작업
+2. **Phase 2 완료 후 분담**:
+   - 개발자 A: Phase 3 (US1) - 핵심 엔드포인트
+   - 개발자 B: Phase 4 (US2) - 외부 API Provider 구현
+   - 개발자 C: Phase 5 (US3) - 오류 처리 강화
+3. **통합 및 테스트**: 함께 검증
+4. **Phase 6-8**: 순차적 또는 병렬 작업
+5. **Phase 9**: 함께 다듬기
 
 ---
 
-## 형식 검증
+## 참고사항 (Notes)
 
-✅ **모든 작업이 체크리스트 형식을 따릅니다**: `- [ ] [ID] [P?] [Story?] Description with file path`
+### 코딩 가이드라인
 
-✅ **사용자 스토리 레이블이 적절히 적용되었습니다**: Phase 3-8의 모든 작업에 [US1]-[US6] 레이블
+- **한국어 사용**: 복잡한 로직에 한국어 주석 추가 (헌장 요구사항)
+- **Async/Await**: 모든 I/O 작업은 비동기 (Database, HTTP 요청)
+- **의존성 주입**: 모든 서비스는 생성자 주입
+- **Options 패턴**: 설정은 IOptions<T> 사용
+- **로깅**: 중요한 이벤트는 Serilog로 로깅 (Info, Warning, Error 구분)
+- **예외 처리**: 비즈니스 예외는 커스텀 예외 클래스 사용
 
-✅ **병렬 실행 가능 작업에 [P] 태그 표시**: 다른 파일, 의존성 없는 작업들
+### 테스트 가이드라인
 
-✅ **파일 경로가 설명에 포함됨**: 각 작업에 정확한 파일 경로 명시
+- **AAA 패턴**: Arrange, Act, Assert 명확히 구분
+- **FluentAssertions**: 가독성 높은 Assertion 사용
+- **Moq**: 외부 의존성 Mocking
+- **xUnit**: [Fact], [Theory] 활용
+- **테스트 격리**: 각 테스트는 독립적으로 실행 가능해야 함
 
-✅ **독립적 테스트 기준 명시**: 각 사용자 스토리마다 검증 방법 제공
+### Git 커밋 전략
+
+- 각 작업 완료 후 커밋
+- 커밋 메시지 형식: `[T###] 작업 설명 (예: [T001] global.json 생성)`
+- Phase 완료 후 브랜치 머지
+- 테스트 실패 시 커밋 금지
+
+### 피해야 할 것
+
+- ❌ 동일 파일에 여러 사람이 동시 작업 (충돌 발생)
+- ❌ 테스트 없이 구현 (TDD 원칙 위반)
+- ❌ 하드코딩된 API 키 (User Secrets 사용)
+- ❌ 동기 I/O 작업 (성능 저하)
+- ❌ 글로벌 상태 (Thread-Safe 문제)
+- ❌ 비밀번호 평문 저장 (환경 변수 또는 Secrets 사용)
 
 ---
 
-**tasks.md 생성 완료** ✅
+## 성공 기준 (Success Criteria)
 
-문의사항: support@collectionserver.example
+### 기능 성공 기준
+
+- ✅ GET /items/{barcode} 엔드포인트가 모든 바코드 형식 지원 (ISBN-10/13, UPC, EAN-13)
+- ✅ Database-First 아키텍처 작동 (데이터베이스 우선 조회, 외부 API 폴백)
+- ✅ 7개 외부 API 모두 통합 (Google Books, Kakao, Aladin, TMDb, OMDb, MusicBrainz, Discogs)
+- ✅ 우선순위 기반 폴백 전략 작동 (한 소스 실패 시 다음 소스로 자동 전환)
+- ✅ 모든 오류 시나리오에 대해 적절한 HTTP 상태 코드 반환 (400, 404, 429, 500, 503)
+- ✅ Rate Limiting 작동 (100 req/min)
+- ✅ OpenAPI/Swagger 문서 생성 및 접근 가능
+
+### 성능 성공 기준
+
+- ✅ 데이터베이스 조회 응답 시간 < 500ms
+- ✅ 외부 API 조회 응답 시간 < 2초
+- ✅ 동시 100개 요청 처리 가능
+- ✅ 데이터베이스 캐싱으로 외부 API 호출 80% 이상 감소
+
+### 테스트 성공 기준
+
+- ✅ 단위 테스트 커버리지 80% 이상
+- ✅ 모든 통합 테스트 통과
+- ✅ 계약 테스트로 OpenAPI 스키마 검증
+- ✅ 오류 시나리오 E2E 테스트 통과
+
+### 배포 성공 기준
+
+- ✅ Podman 컨테이너로 빌드 및 실행 가능
+- ✅ podman-compose로 전체 스택 실행 가능
+- ✅ quickstart.md 가이드대로 처음부터 설치 가능
+- ✅ 프로덕션 환경 설정 완료 (HTTPS, 환경 변수)
+
+---
+
+## 타임라인 예측 (Estimated Timeline)
+
+**가정**: 1명의 풀타임 개발자
+
+- **Phase 1 (설정)**: 1일 (T001-T016)
+- **Phase 2 (기반)**: 3-4일 (T017-T049)
+- **Phase 3 (US1)**: 2-3일 (T050-T070)
+- **Phase 4 (US2)**: 4-5일 (T071-T099) - 7개 외부 API 통합
+- **Phase 5 (US3)**: 1-2일 (T100-T119)
+- **Phase 6 (US4)**: 1-2일 (T120-T135)
+- **Phase 7 (US5)**: 1일 (T136-T151)
+- **Phase 8 (US6)**: 1일 (T152-T162)
+- **Phase 9 (다듬기)**: 2-3일 (T163-T188)
+
+**총 예상 기간**: 16-22일 (약 3-4주)
+
+**병렬 팀 (3명)**: 약 10-14일 (2주)
+
+---
+
+**작업 목록 생성 완료** ✅
+
+**다음 단계**: `/speckit.implement` 명령으로 작업 시작
+
+**총 작업 수**: 188개
+- 설정: 16개
+- 기반: 33개
+- US1 (MVP): 21개
+- US2 (외부 API): 29개
+- US3 (오류 처리): 20개
+- US4 (성능): 16개
+- US5 (폴백): 16개
+- US6 (Rate Limit): 11개
+- 다듬기: 26개
+
+**병렬 실행 가능 작업**: 약 60개 ([P] 표시)
+**MVP 필수 작업**: T001-T070 (70개, 약 1주)

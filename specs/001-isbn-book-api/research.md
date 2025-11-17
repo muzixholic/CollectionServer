@@ -10,40 +10,70 @@
 
 ## 주요 연구 항목
 
-### 1. .NET 10.0 기술 스택
+### 1. ASP.NET Core 10.0 기술 스택
 
 #### 결정사항
-- **프레임워크**: ASP.NET Core 10.0 (Minimal APIs 패턴 사용)
+- **웹 프레임워크**: **ASP.NET Core 10.0** (Minimal APIs 패턴)
+- **런타임**: .NET 10.0 (LTS)
 - **언어**: C# 13
 - **ORM**: Entity Framework Core 10.0
 - **데이터베이스 드라이버**: Npgsql.EntityFrameworkCore.PostgreSQL 10.0
 
 #### 근거
-1. **.NET 10.0 LTS**: 
+1. **ASP.NET Core 10.0 (웹 프레임워크)**:
+   - **Minimal APIs**: 경량 HTTP API 개발에 최적화
+     ```csharp
+     app.MapGet("/items/{barcode}", async (string barcode, IMediaService service) 
+         => await service.GetMediaByBarcodeAsync(barcode));
+     ```
+   - **내장 Rate Limiting**: AddRateLimiter() / UseRateLimiter() 미들웨어
+   - **의존성 주입 (DI)**: IServiceCollection을 통한 강력한 DI 컨테이너
+   - **미들웨어 파이프라인**: 요청/응답 처리 체인 (UseMiddleware<T>)
+   - **Configuration 시스템**: appsettings.json, 환경 변수, User Secrets 통합
+   - **OpenAPI 지원**: Swashbuckle.AspNetCore로 자동 API 문서 생성
+   - **HttpClientFactory**: 효율적인 HTTP 클라이언트 관리
+
+2. **.NET 10.0 LTS 런타임**: 
    - 2024년 11월 출시된 최신 안정 버전
    - 향상된 성능 (Native AOT 지원, JSON 직렬화 최적화)
    - 6년간의 장기 지원 (2030년까지)
    - C# 13의 최신 언어 기능 활용 가능
+   - 크로스 플랫폼 (Linux, Windows, macOS)
 
-2. **Minimal APIs**:
-   - 간결한 엔드포인트 정의 (Program.cs에서 직접 라우팅)
-   - 낮은 메모리 사용량 및 빠른 시작 시간
-   - 단일 엔드포인트 API에 최적화된 패턴
-   ```csharp
-   app.MapGet("/items/{barcode}", async (string barcode, IMediaService service) 
-       => await service.GetMediaByBarcodeAsync(barcode));
-   ```
+3. **Minimal APIs vs Controller 기반 선택**:
+   - **Minimal APIs 선택 이유**:
+     - 단일 엔드포인트 API에 최적 (GET /items/{barcode})
+     - Program.cs에 모든 로직 집중 → 간결성
+     - 낮은 메모리 사용량 (Controller, View 불필요)
+     - 빠른 시작 시간 (Reflection 오버헤드 감소)
+   - **Controller 기반 대안 거부 이유**:
+     - CRUD API나 복잡한 라우팅에 적합
+     - 본 프로젝트는 조회 전용 단일 엔드포인트
+     - Attribute Routing, Model Binding 등의 기능 불필요
 
-3. **Entity Framework Core 10.0**:
+4. **Entity Framework Core 10.0**:
    - Database-First 패턴 완벽 지원
    - 복잡한 쿼리 최적화 (Compiled Queries)
    - PostgreSQL 네이티브 기능 지원 (JSONB, 배열 타입)
    - 마이그레이션 도구로 스키마 버전 관리
+   - AddDbContext<T>()로 DI 통합
+
+#### ASP.NET Core 핵심 개념 활용
+| 개념 | 사용 사례 | 구현 위치 |
+|-----|---------|---------|
+| **Minimal API** | 엔드포인트 정의 | Program.cs - MapGet() |
+| **의존성 주입** | 서비스 등록/해결 | Program.cs - AddScoped/AddSingleton |
+| **미들웨어** | 전역 예외 처리, Rate Limiting | ErrorHandlingMiddleware, UseRateLimiter() |
+| **Options 패턴** | 강타입 설정 | IOptions<ExternalApiSettings> |
+| **HttpClientFactory** | 외부 API 호출 | AddHttpClient<T>() |
+| **Logging** | 구조화된 로깅 | ILogger<T>, Serilog.AspNetCore |
+| **Configuration** | 환경별 설정 | appsettings.json, User Secrets |
 
 #### 고려한 대안
-- **.NET 8.0**: 안정적이지만 .NET 10.0의 성능 개선 및 최신 기능 부족
-- **Dapper (Micro ORM)**: 성능은 우수하나 EF Core 10의 캐싱 및 변경 추적 기능 필요
-- **MVC 패턴**: 단일 엔드포인트에는 과도한 구조, Minimal APIs가 더 적합
+- **.NET 8.0**: 안정적이지만 .NET 10.0의 성능 개선 및 최신 ASP.NET Core 기능 부족
+- **Dapper (Micro ORM)**: 성능은 우수하나 EF Core 10의 변경 추적 및 마이그레이션 기능 필요
+- **Controller 기반 MVC**: 복잡한 라우팅에 적합하지만 단일 엔드포인트에는 과도
+- **FastEndpoints 라이브러리**: 서드파티 의존성 추가, ASP.NET Core 내장 Minimal API로 충분
 
 ---
 
@@ -416,9 +446,9 @@ builder.Host.UseSerilog((context, configuration) =>
 ### 8. 배포 및 컨테이너화
 
 #### 결정사항
-**Docker 컨테이너**:
+**Podman 컨테이너**:
 ```dockerfile
-# Dockerfile
+# Containerfile
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["src/CollectionServer.Api/CollectionServer.Api.csproj", "src/CollectionServer.Api/"]
@@ -439,7 +469,7 @@ COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "CollectionServer.Api.dll"]
 ```
 
-**Docker Compose**:
+**Podman Compose**:
 ```yaml
 version: '3.8'
 services:
@@ -472,6 +502,8 @@ volumes:
 - **이식성**: 로컬 개발, CI/CD, 프로덕션 환경 일관성
 - **격리**: PostgreSQL과 API 분리
 - **스케일링**: Kubernetes 배포 용이
+- **보안**: Rootless 컨테이너 실행 가능
+- **호환성**: OCI 표준 준수로 Docker 이미지와 호환
 
 ---
 
@@ -479,45 +511,149 @@ volumes:
 
 ### 확정된 기술 스택
 
-| 구성 요소 | 선택 | 버전 |
-|----------|------|------|
-| 런타임 | .NET | 10.0 |
-| 언어 | C# | 13 |
-| 프레임워크 | ASP.NET Core | 10.0 |
-| ORM | Entity Framework Core | 10.0 |
-| 데이터베이스 | PostgreSQL | 16+ |
-| 데이터베이스 드라이버 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0 |
-| API 문서화 | Swashbuckle.AspNetCore | 7.0.0 |
-| 로깅 | Serilog.AspNetCore | 10.0 |
-| 테스팅 | xUnit + Moq + FluentAssertions | 최신 |
-| 컨테이너 | Docker | 최신 |
+| 구성 요소 | 선택 | 버전 | 역할 |
+|----------|------|------|------|
+| 웹 프레임워크 | **ASP.NET Core** | 10.0 | HTTP API, 미들웨어, DI |
+| 런타임 | .NET | 10.0 | LTS, 크로스 플랫폼 |
+| 언어 | C# | 13 | 최신 언어 기능 |
+| ORM | Entity Framework Core | 10.0 | PostgreSQL 통합 |
+| 데이터베이스 | PostgreSQL | 16+ | 주 데이터 저장소 |
+| 데이터베이스 드라이버 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0 | PostgreSQL Provider |
+| API 문서화 | Swashbuckle.AspNetCore | 7.0.0 | OpenAPI/Swagger |
+| 로깅 | Serilog.AspNetCore | 10.0 | 구조화된 로깅 |
+| 테스팅 | xUnit + Moq + FluentAssertions | 최신 | 단위/통합 테스트 |
+| 컨테이너 | Podman | 최신 | OCI 컨테이너 |
 
-### NuGet 패키지 버전
+### ASP.NET Core 관련 NuGet 패키지
 
 ```xml
-<!-- CollectionServer.Api.csproj -->
-<ItemGroup>
-  <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
-  <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
-  <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-  <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
-</ItemGroup>
+<!-- CollectionServer.Api.csproj - ASP.NET Core Web API -->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
 
-<!-- CollectionServer.Infrastructure.csproj -->
-<ItemGroup>
-  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
-  <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-</ItemGroup>
+  <ItemGroup>
+    <!-- ASP.NET Core 핵심 패키지 -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
+    
+    <!-- Rate Limiting (ASP.NET Core 10 내장) -->
+    <PackageReference Include="Microsoft.AspNetCore.RateLimiting" Version="10.0.0" />
+    
+    <!-- Logging -->
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
 
-<!-- CollectionServer.UnitTests.csproj -->
-<ItemGroup>
-  <PackageReference Include="xunit" Version="2.9.0" />
-  <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
-  <PackageReference Include="Moq" Version="4.20.0" />
-  <PackageReference Include="FluentAssertions" Version="6.12.0" />
-  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
-</ItemGroup>
+  <ItemGroup>
+    <!-- 프로젝트 참조 -->
+    <ProjectReference Include="../CollectionServer.Core/CollectionServer.Core.csproj" />
+    <ProjectReference Include="../CollectionServer.Infrastructure/CollectionServer.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
+
+<!-- CollectionServer.Core.csproj - 도메인 레이어 -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ASP.NET Core 추상화 (ILogger 등) -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
+  </ItemGroup>
+</Project>
+
+<!-- CollectionServer.Infrastructure.csproj - 인프라 레이어 -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Entity Framework Core + PostgreSQL -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    
+    <!-- HttpClientFactory (ASP.NET Core) -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    
+    <!-- Options 패턴 -->
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CollectionServer.Core/CollectionServer.Core.csproj" />
+  </ItemGroup>
+</Project>
+
+<!-- CollectionServer.UnitTests.csproj - 단위 테스트 -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" Version="4.20.0" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/CollectionServer.Core/CollectionServer.Core.csproj" />
+    <ProjectReference Include="../../src/CollectionServer.Infrastructure/CollectionServer.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
+
+<!-- CollectionServer.IntegrationTests.csproj - 통합 테스트 -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ASP.NET Core 통합 테스트 -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
+    
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/CollectionServer.Api/CollectionServer.Api.csproj" />
+  </ItemGroup>
+</Project>
 ```
 
 ### global.json
@@ -535,22 +671,109 @@ volumes:
 
 - **.NET 10 SDK**: 개발 및 빌드
 - **PostgreSQL 16+**: 프로덕션 데이터베이스
-- **Docker**: 컨테이너 배포 (선택 사항)
+- **Podman**: 컨테이너 배포 (선택 사항)
 
 ### 핵심 아키텍처 결정
 
 1. **Database-First**: 내부 DB 우선 조회 → 외부 API 폴백
 2. **우선순위 기반 외부 API**: 미디어 타입별 최적 소스 선택
 3. **Clean Architecture**: API, Core, Infrastructure 레이어 분리
-4. **Minimal APIs**: 간결한 엔드포인트 정의
-5. **전역 오류 처리**: 일관된 HTTP 상태 코드 및 오류 메시지
+4. **ASP.NET Core Minimal APIs**: 간결한 엔드포인트 정의 (vs Controller 기반)
+5. **의존성 주입 (DI)**: ASP.NET Core DI Container로 모든 서비스 관리
+6. **미들웨어 파이프라인**: 전역 예외 처리, Rate Limiting, 로깅
+7. **HttpClientFactory**: 외부 API 호출 효율성 및 연결 풀 관리
+8. **Options 패턴**: IOptions<T>로 강타입 설정 관리
+
+### ASP.NET Core 10 최신 기능 활용
+
+#### 1. Minimal APIs (vs Controller)
+```csharp
+// ✅ Minimal API (선택) - 단일 엔드포인트 최적화
+app.MapGet("/items/{barcode}", async (string barcode, IMediaService service) 
+    => await service.GetMediaByBarcodeAsync(barcode))
+    .RequireRateLimiting("api")
+    .WithOpenApi();
+
+// ❌ Controller 기반 (거부) - 불필요한 복잡성
+[ApiController]
+[Route("items")]
+public class MediaController : ControllerBase { ... }
+```
+
+#### 2. 내장 Rate Limiting (ASP.NET Core 7+)
+```csharp
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("api", opt =>
+    {
+        opt.PermitLimit = 100;
+        opt.Window = TimeSpan.FromMinutes(1);
+    });
+});
+```
+
+#### 3. OpenAPI 자동 생성
+```csharp
+app.MapGet("/items/{barcode}", ...)
+    .WithName("GetMediaByBarcode")
+    .WithOpenApi(op => new(op)
+    {
+        Summary = "바코드로 미디어 조회",
+        Description = "ISBN-10/13, UPC, EAN-13 지원"
+    })
+    .Produces<MediaItem>(200)
+    .Produces<ErrorResponse>(400)
+    .Produces<ErrorResponse>(404);
+```
+
+#### 4. 결과 타입 (IResult)
+```csharp
+// TypedResults 사용 (강타입 반환)
+app.MapGet("/items/{barcode}", async (string barcode, IMediaService service) =>
+{
+    try
+    {
+        var media = await service.GetMediaByBarcodeAsync(barcode);
+        return TypedResults.Ok(media);
+    }
+    catch (NotFoundException)
+    {
+        return TypedResults.NotFound(new { error = "미디어를 찾을 수 없습니다." });
+    }
+});
+```
+
+#### 5. 엔드포인트 필터 (Endpoint Filters)
+```csharp
+// 요청 검증 필터
+app.MapGet("/items/{barcode}", ...)
+    .AddEndpointFilter(async (context, next) =>
+    {
+        var barcode = context.GetArgument<string>(0);
+        if (string.IsNullOrWhiteSpace(barcode))
+            return Results.BadRequest("바코드가 비어있습니다.");
+        
+        return await next(context);
+    });
+```
+
+### ASP.NET Core 개발 도구
+
+| 도구 | 용도 | 명령어 |
+|-----|------|-------|
+| **dotnet CLI** | 프로젝트 관리 | `dotnet new webapi`, `dotnet run`, `dotnet build` |
+| **EF Core CLI** | 마이그레이션 | `dotnet ef migrations add`, `dotnet ef database update` |
+| **User Secrets** | 로컬 개발 비밀 | `dotnet user-secrets set "ApiKey" "value"` |
+| **dotnet watch** | Hot Reload | `dotnet watch run` (코드 변경 시 자동 재시작) |
+| **Swagger UI** | API 테스트 | https://localhost:5001/swagger |
 
 ### 다음 단계 (Phase 1)
 
 1. **data-model.md**: 엔티티 상세 설계 (필드, 관계, 제약 조건)
-2. **contracts/**: OpenAPI 스키마 정의
-3. **quickstart.md**: 개발 환경 설정 가이드
+2. **contracts/**: OpenAPI 스키마 정의 (Swagger 기반)
+3. **quickstart.md**: 개발 환경 설정 가이드 (ASP.NET Core 10 설치, PostgreSQL 설정)
 
 ---
 
-**연구 완료**: 모든 NEEDS CLARIFICATION 항목 해결 완료 ✅
+**연구 완료**: 모든 NEEDS CLARIFICATION 항목 해결 완료 ✅  
+**ASP.NET Core 10 특화**: 웹 프레임워크 핵심 기능 명시 완료 ✅

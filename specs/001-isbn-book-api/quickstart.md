@@ -19,7 +19,7 @@
 | .NET SDK | 10.0.100+ | `dotnet --version` | [https://dotnet.microsoft.com/download/dotnet/10.0](https://dotnet.microsoft.com/download/dotnet/10.0) |
 | PostgreSQL | 16+ | `psql --version` | [https://www.postgresql.org/download/](https://www.postgresql.org/download/) |
 | Git | 최신 | `git --version` | [https://git-scm.com/downloads](https://git-scm.com/downloads) |
-| Docker (선택) | 최신 | `docker --version` | [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop) |
+| Podman (선택) | 최신 | `podman --version` | [https://podman.io/getting-started/installation](https://podman.io/getting-started/installation) |
 
 ### 설치 확인
 
@@ -205,9 +205,9 @@ GRANT ALL PRIVILEGES ON DATABASE collectiondb TO collectionuser;
 \q
 ```
 
-### 옵션 B: Docker 컨테이너 (권장)
+### 옵션 B: Podman 컨테이너 (권장)
 
-**docker-compose.yml** 생성 (프로젝트 루트):
+**podman-compose.yml** 생성 (프로젝트 루트):
 
 ```yaml
 version: '3.8'
@@ -231,14 +231,24 @@ volumes:
 ```
 
 ```bash
-# Docker Compose로 PostgreSQL 시작
-docker-compose up -d
+# podman-compose로 PostgreSQL 시작 (podman-compose 설치 필요)
+podman-compose up -d
+
+# 또는 Podman pod 사용 (podman-compose 없이)
+podman pod create --name collectionserver -p 5432:5432
+podman run -d --pod collectionserver \
+  --name collectiondb \
+  -e POSTGRES_DB=collectiondb \
+  -e POSTGRES_USER=collectionuser \
+  -e POSTGRES_PASSWORD=YourSecurePassword123! \
+  -v postgres_data:/var/lib/postgresql/data \
+  postgres:16
 
 # 상태 확인
-docker-compose ps
+podman ps
 
 # 로그 확인
-docker-compose logs postgres
+podman logs collectiondb
 ```
 
 ### 연결 문자열 설정
@@ -549,11 +559,11 @@ dotnet test
 
 ---
 
-## 9. Docker 빌드 및 실행 (선택)
+## 9. Podman 빌드 및 실행 (선택)
 
-### 9.1 Dockerfile 생성
+### 9.1 Containerfile 생성
 
-**Dockerfile** (프로젝트 루트):
+**Containerfile** (프로젝트 루트):
 
 ```dockerfile
 # Build stage
@@ -583,15 +593,15 @@ EXPOSE 8080
 ENTRYPOINT ["dotnet", "CollectionServer.Api.dll"]
 ```
 
-### 9.2 Docker 이미지 빌드
+### 9.2 Podman 이미지 빌드
 
 ```bash
-docker build -t collectionserver:latest .
+podman build -t collectionserver:latest .
 ```
 
-### 9.3 Docker Compose로 전체 스택 실행
+### 9.3 podman-compose로 전체 스택 실행
 
-**docker-compose.yml** (전체 버전):
+**podman-compose.yml** (전체 버전):
 
 ```yaml
 version: '3.8'
@@ -632,17 +642,36 @@ volumes:
 ```
 
 ```bash
-# 전체 스택 시작
-docker-compose up --build
+# podman-compose로 전체 스택 시작
+podman-compose up --build
 
-# 백그라운드 실행
-docker-compose up -d --build
+# 또는 Podman pod로 수동 실행
+podman pod create --name collectionserver -p 8080:8080 -p 5432:5432
+podman run -d --pod collectionserver \
+  --name collectiondb \
+  -e POSTGRES_DB=collectiondb \
+  -e POSTGRES_USER=collectionuser \
+  -e POSTGRES_PASSWORD=YourSecurePassword123! \
+  -v postgres_data:/var/lib/postgresql/data \
+  postgres:16
+
+podman run -d --pod collectionserver \
+  --name collectionserver_api \
+  -e ASPNETCORE_URLS=http://+:8080 \
+  -e ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=collectiondb;Username=collectionuser;Password=YourSecurePassword123! \
+  collectionserver:latest
+
+# 백그라운드 실행 (podman-compose)
+podman-compose up -d --build
 
 # 로그 확인
-docker-compose logs -f api
+podman logs -f collectionserver_api
 
 # 중지
-docker-compose down
+podman-compose down
+# 또는 pod 중지
+podman pod stop collectionserver
+podman pod rm collectionserver
 ```
 
 ---
@@ -653,7 +682,7 @@ docker-compose down
 
 - **C# Dev Kit**: C# 개발 지원
 - **REST Client**: HTTP 요청 테스트
-- **Docker**: Docker 컨테이너 관리
+- **Podman**: Podman 컨테이너 관리
 - **PostgreSQL**: 데이터베이스 탐색
 
 ### Visual Studio 2022
@@ -675,9 +704,9 @@ brew services list  # macOS
 # 포트 충돌 확인
 lsof -i :5432
 
-# Docker 컨테이너 확인
-docker ps -a
-docker logs collectiondb
+# Podman 컨테이너 확인
+podman ps -a
+podman logs collectiondb
 ```
 
 ### EF Core 마이그레이션 오류
