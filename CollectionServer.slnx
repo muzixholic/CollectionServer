@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CollectionServer.Api/CollectionServer.Api.csproj" />
+    <Project Path="src/CollectionServer.Core/CollectionServer.Core.csproj" />
+    <Project Path="src/CollectionServer.Infrastructure/CollectionServer.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CollectionServer.ContractTests/CollectionServer.ContractTests.csproj" />
+    <Project Path="tests/CollectionServer.IntegrationTests/CollectionServer.IntegrationTests.csproj" />
+    <Project Path="tests/CollectionServer.UnitTests/CollectionServer.UnitTests.csproj" />
+  </Folder>
+</Solution>

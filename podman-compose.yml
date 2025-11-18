@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: collectionserver-postgres
+    environment:
+      POSTGRES_USER: collectionserver
+      POSTGRES_PASSWORD: collectionserver_dev
+      POSTGRES_DB: collectionserver
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collectionserver"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collectionserver-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: collectionserver-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=collectionserver;Username=collectionserver;Password=collectionserver_dev
+    ports:
+      - "5000:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - collectionserver-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  collectionserver-network:
+    driver: bridge

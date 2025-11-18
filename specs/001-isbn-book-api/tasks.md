@@ -39,22 +39,22 @@ tests/
 
 **목적 (Purpose)**: 프로젝트 초기화 및 기본 구조 생성
 
-- [ ] T001 global.json 생성하여 .NET SDK 10.0.100 버전 고정
-- [ ] T002 CollectionServer.sln 솔루션 파일 생성
-- [ ] T003 [P] src/CollectionServer.Api 프로젝트 생성 (ASP.NET Core 10 Web API)
-- [ ] T004 [P] src/CollectionServer.Core 프로젝트 생성 (클래스 라이브러리)
-- [ ] T005 [P] src/CollectionServer.Infrastructure 프로젝트 생성 (클래스 라이브러리)
-- [ ] T006 [P] tests/CollectionServer.UnitTests 프로젝트 생성 (xUnit)
-- [ ] T007 [P] tests/CollectionServer.IntegrationTests 프로젝트 생성 (xUnit)
-- [ ] T008 [P] tests/CollectionServer.ContractTests 프로젝트 생성 (xUnit)
-- [ ] T009 프로젝트 간 참조 추가 (Api → Core, Infrastructure; Infrastructure → Core)
-- [ ] T010 [P] Api 프로젝트에 필수 NuGet 패키지 추가 (Swashbuckle.AspNetCore, Serilog.AspNetCore)
-- [ ] T011 [P] Infrastructure 프로젝트에 EF Core 패키지 추가 (Microsoft.EntityFrameworkCore, Npgsql.EntityFrameworkCore.PostgreSQL)
-- [ ] T012 [P] 테스트 프로젝트에 테스트 프레임워크 패키지 추가 (xUnit, Moq, FluentAssertions)
-- [ ] T013 [P] .gitignore 파일 생성 (.NET 표준 템플릿)
-- [ ] T014 [P] README.md 파일 생성 (프로젝트 개요, 실행 방법)
-- [ ] T015 [P] Containerfile 생성 (Podman 빌드용 멀티 스테이지)
-- [ ] T016 [P] podman-compose.yml 생성 (PostgreSQL + API 서비스)
+- [X] T001 global.json 생성하여 .NET SDK 10.0.100 버전 고정
+- [X] T002 CollectionServer.sln 솔루션 파일 생성
+- [X] T003 [P] src/CollectionServer.Api 프로젝트 생성 (ASP.NET Core 10 Web API)
+- [X] T004 [P] src/CollectionServer.Core 프로젝트 생성 (클래스 라이브러리)
+- [X] T005 [P] src/CollectionServer.Infrastructure 프로젝트 생성 (클래스 라이브러리)
+- [X] T006 [P] tests/CollectionServer.UnitTests 프로젝트 생성 (xUnit)
+- [X] T007 [P] tests/CollectionServer.IntegrationTests 프로젝트 생성 (xUnit)
+- [X] T008 [P] tests/CollectionServer.ContractTests 프로젝트 생성 (xUnit)
+- [X] T009 프로젝트 간 참조 추가 (Api → Core, Infrastructure; Infrastructure → Core)
+- [X] T010 [P] Api 프로젝트에 필수 NuGet 패키지 추가 (Swashbuckle.AspNetCore, Serilog.AspNetCore)
+- [X] T011 [P] Infrastructure 프로젝트에 EF Core 패키지 추가 (Microsoft.EntityFrameworkCore, Npgsql.EntityFrameworkCore.PostgreSQL)
+- [X] T012 [P] 테스트 프로젝트에 테스트 프레임워크 패키지 추가 (xUnit, Moq, FluentAssertions)
+- [X] T013 [P] .gitignore 파일 생성 (.NET 표준 템플릿)
+- [X] T014 [P] README.md 파일 생성 (프로젝트 개요, 실행 방법)
+- [X] T015 [P] Containerfile 생성 (Podman 빌드용 멀티 스테이지)
+- [X] T016 [P] podman-compose.yml 생성 (PostgreSQL + API 서비스)
 
 ---
 
@@ -66,48 +66,48 @@ tests/
 
 ### 도메인 기반 작업
 
-- [ ] T017 [P] src/CollectionServer.Core/Enums/MediaType.cs 생성 (Book, Movie, MusicAlbum)
-- [ ] T018 [P] src/CollectionServer.Core/Enums/BarcodeType.cs 생성 (ISBN10, ISBN13, UPC, EAN13)
-- [ ] T019 [P] src/CollectionServer.Core/Entities/MediaItem.cs 추상 기본 클래스 생성
-- [ ] T020 [P] src/CollectionServer.Core/Entities/Book.cs 엔티티 생성
-- [ ] T021 [P] src/CollectionServer.Core/Entities/Movie.cs 엔티티 생성
-- [ ] T022 [P] src/CollectionServer.Core/Entities/MusicAlbum.cs 엔티티 생성
-- [ ] T023 [P] src/CollectionServer.Core/Entities/Track.cs 값 객체 생성 (음악 트랙용)
-- [ ] T024 [P] src/CollectionServer.Core/Exceptions/InvalidBarcodeException.cs 생성
-- [ ] T025 [P] src/CollectionServer.Core/Exceptions/NotFoundException.cs 생성
-- [ ] T026 [P] src/CollectionServer.Core/Exceptions/RateLimitExceededException.cs 생성
-- [ ] T027 [P] src/CollectionServer.Core/Interfaces/IMediaRepository.cs 인터페이스 정의
-- [ ] T028 [P] src/CollectionServer.Core/Interfaces/IMediaService.cs 인터페이스 정의
-- [ ] T029 [P] src/CollectionServer.Core/Interfaces/IMediaProvider.cs 인터페이스 정의 (외부 API용)
+- [X] T017 [P] src/CollectionServer.Core/Enums/MediaType.cs 생성 (Book, Movie, MusicAlbum)
+- [X] T018 [P] src/CollectionServer.Core/Enums/BarcodeType.cs 생성 (ISBN10, ISBN13, UPC, EAN13)
+- [X] T019 [P] src/CollectionServer.Core/Entities/MediaItem.cs 추상 기본 클래스 생성
+- [X] T020 [P] src/CollectionServer.Core/Entities/Book.cs 엔티티 생성
+- [X] T021 [P] src/CollectionServer.Core/Entities/Movie.cs 엔티티 생성
+- [X] T022 [P] src/CollectionServer.Core/Entities/MusicAlbum.cs 엔티티 생성
+- [X] T023 [P] src/CollectionServer.Core/Entities/Track.cs 값 객체 생성 (음악 트랙용)
+- [X] T024 [P] src/CollectionServer.Core/Exceptions/InvalidBarcodeException.cs 생성
+- [X] T025 [P] src/CollectionServer.Core/Exceptions/NotFoundException.cs 생성
+- [X] T026 [P] src/CollectionServer.Core/Exceptions/RateLimitExceededException.cs 생성
+- [X] T027 [P] src/CollectionServer.Core/Interfaces/IMediaRepository.cs 인터페이스 정의
+- [X] T028 [P] src/CollectionServer.Core/Interfaces/IMediaService.cs 인터페이스 정의
+- [X] T029 [P] src/CollectionServer.Core/Interfaces/IMediaProvider.cs 인터페이스 정의 (외부 API용)
 
 ### 데이터베이스 기반 작업
 
-- [ ] T030 src/CollectionServer.Infrastructure/Data/ApplicationDbContext.cs 생성
-- [ ] T031 [P] src/CollectionServer.Infrastructure/Data/Configurations/MediaItemConfiguration.cs 생성 (Fluent API)
-- [ ] T032 [P] src/CollectionServer.Infrastructure/Data/Configurations/BookConfiguration.cs 생성 (Fluent API)
-- [ ] T033 [P] src/CollectionServer.Infrastructure/Data/Configurations/MovieConfiguration.cs 생성 (Fluent API)
-- [ ] T034 [P] src/CollectionServer.Infrastructure/Data/Configurations/MusicAlbumConfiguration.cs 생성 (Fluent API)
-- [ ] T035 EF Core 초기 마이그레이션 생성 (InitialCreate)
-- [ ] T036 PostgreSQL 데이터베이스 스키마 적용 (dotnet ef database update)
+- [X] T030 src/CollectionServer.Infrastructure/Data/ApplicationDbContext.cs 생성
+- [X] T031 [P] src/CollectionServer.Infrastructure/Data/Configurations/MediaItemConfiguration.cs 생성 (Fluent API)
+- [X] T032 [P] src/CollectionServer.Infrastructure/Data/Configurations/BookConfiguration.cs 생성 (Fluent API)
+- [X] T033 [P] src/CollectionServer.Infrastructure/Data/Configurations/MovieConfiguration.cs 생성 (Fluent API)
+- [X] T034 [P] src/CollectionServer.Infrastructure/Data/Configurations/MusicAlbumConfiguration.cs 생성 (Fluent API)
+- [X] T035 EF Core 초기 마이그레이션 생성 (InitialCreate)
+- [X] T036 PostgreSQL 데이터베이스 스키마 적용 (dotnet ef database update)
 
 ### 공통 서비스 기반 작업
 
-- [ ] T037 src/CollectionServer.Core/Services/BarcodeValidator.cs 구현 (체크섬 검증 포함)
-- [ ] T038 src/CollectionServer.Infrastructure/Repositories/MediaRepository.cs 구현 (IMediaRepository)
-- [ ] T039 src/CollectionServer.Infrastructure/Options/ExternalApiSettings.cs 생성 (Options 패턴)
+- [X] T037 src/CollectionServer.Core/Services/BarcodeValidator.cs 구현 (체크섬 검증 포함)
+- [X] T038 src/CollectionServer.Infrastructure/Repositories/MediaRepository.cs 구현 (IMediaRepository)
+- [X] T039 src/CollectionServer.Infrastructure/Options/ExternalApiSettings.cs 생성 (Options 패턴)
 
 ### ASP.NET Core 기반 작업
 
-- [ ] T040 src/CollectionServer.Api/Program.cs 기본 설정 (WebApplicationBuilder, Minimal API 구조)
-- [ ] T041 src/CollectionServer.Api/appsettings.json 생성 (기본 설정, 연결 문자열 템플릿)
-- [ ] T042 src/CollectionServer.Api/appsettings.Development.json 생성 (개발 환경 설정)
-- [ ] T043 src/CollectionServer.Api/appsettings.Production.json 생성 (프로덕션 환경 설정)
-- [ ] T044 src/CollectionServer.Api/Middleware/ErrorHandlingMiddleware.cs 구현 (전역 예외 처리)
-- [ ] T045 src/CollectionServer.Api/Extensions/ServiceCollectionExtensions.cs 생성 (DI 확장 메서드)
-- [ ] T046 Program.cs에 Serilog 로깅 구성 추가 (JSON 포맷, 파일 출력)
-- [ ] T047 Program.cs에 Rate Limiting 미들웨어 추가 (100 req/min)
-- [ ] T048 Program.cs에 Swagger/OpenAPI 구성 추가 (한국어 설명 포함)
-- [ ] T049 Program.cs에 의존성 주입 구성 추가 (DbContext, Repositories, Services)
+- [X] T040 src/CollectionServer.Api/Program.cs 기본 설정 (WebApplicationBuilder, Minimal API 구조)
+- [X] T041 src/CollectionServer.Api/appsettings.json 생성 (기본 설정, 연결 문자열 템플릿)
+- [X] T042 src/CollectionServer.Api/appsettings.Development.json 생성 (개발 환경 설정)
+- [X] T043 src/CollectionServer.Api/appsettings.Production.json 생성 (프로덕션 환경 설정)
+- [X] T044 src/CollectionServer.Api/Middleware/ErrorHandlingMiddleware.cs 구현 (전역 예외 처리)
+- [X] T045 src/CollectionServer.Api/Extensions/ServiceCollectionExtensions.cs 생성 (DI 확장 메서드)
+- [X] T046 Program.cs에 Serilog 로깅 구성 추가 (JSON 포맷, 파일 출력)
+- [X] T047 Program.cs에 Rate Limiting 미들웨어 추가 (100 req/min)
+- [X] T048 Program.cs에 Swagger/OpenAPI 구성 추가 (한국어 설명 포함)
+- [X] T049 Program.cs에 의존성 주입 구성 추가 (DbContext, Repositories, Services)
 
 **체크포인트 (Checkpoint)**: 기반 준비 완료 - 이제 사용자 스토리 구현을 병렬로 시작할 수 있습니다
 
