@@ -16,9 +16,16 @@
 **주요 의존성 (Primary Dependencies)**:  
   - ASP.NET Core 10.0 (웹 프레임워크, 미들웨어 파이프라인)
   - Entity Framework Core 10.0 (ORM, 데이터 액세스)
-  - Npgsql.EntityFrameworkCore.PostgreSQL 10.0 (PostgreSQL 드라이버)
-  - Serilog.AspNetCore 10.0 (구조화된 로깅)
-  - Swashbuckle.AspNetCore 7.0 (OpenAPI/Swagger 문서화)
+  - Npgsql.EntityFrameworkCore.PostgreSQL (EF Core 10 호환 버전)
+    - **참고**: .NET 10은 2025년 11월 정식 출시 예정. 개발 시점(2025-01)에는 Preview 사용. 패키지 설치 시 NuGet에서 실제 사용 가능한 최신 버전으로 대체 필요.
+  - Serilog.AspNetCore (최신 안정 버전, .NET 10 호환)
+  - Swashbuckle.AspNetCore 7.0+ (OpenAPI/Swagger 문서화)
+  
+**버전 정책**:
+- 프로젝트 생성 시점(2025-11)에는 .NET 10 Preview 사용 가능
+- 안정 버전 출시 후 LTS 업데이트 권장
+- NuGet 패키지 버전은 설치 시점의 최신 안정 버전 사용
+- `dotnet add package` 실행 시 `--version` 옵션으로 명시적 버전 지정
   
 **저장소 (Storage)**: PostgreSQL 16+ (주 데이터베이스, TPT 전략)  
 **테스트 (Testing)**: xUnit 2.9, Moq 4.20, FluentAssertions 6.12, WebApplicationFactory (통합 테스트)  
@@ -184,7 +191,7 @@ src/
     │   ├── Books/
     │   │   ├── GoogleBooksProvider.cs
     │   │   ├── KakaoBookProvider.cs
-    │   │   └── AladinApiProvider.cs
+    │   │   └── AladinProvider.cs
     │   ├── Movies/
     │   │   ├── TMDbProvider.cs
     │   │   └── OMDbProvider.cs
@@ -742,6 +749,61 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             db.Database.EnsureCreated();
         });
+    }
+}
+```
+
+### ASP.NET Core 통합 테스트 전략
+
+**In-Memory DB 전략**:
+
+✅ **장점**:
+- 빠른 테스트 실행 (초당 수백 개 테스트)
+- 외부 의존성 없음 (Docker, PostgreSQL 불필요)
+- CI/CD 파이프라인 단순화
+- 격리된 테스트 환경
+
+⚠️ **한계**:
+- PostgreSQL 특화 기능 미지원:
+  - 배열 타입 (`text[]`, `int[]`)
+  - JSONB 컬럼
+  - Full-Text Search (tsvector)
+  - 트리거 및 함수
+  - CHECK 제약 조건
+  - 트랜잭션 격리 수준
+- 동시성 제어 테스트 제한
+- 실제 네트워크 I/O 성능 측정 불가
+
+**권장 사항**:
+- **단위 테스트**: In-Memory DB 사용 ✅
+- **통합 테스트 (기본 CRUD)**: In-Memory DB 사용 ✅
+- **통합 테스트 (PostgreSQL 기능 필요)**: Testcontainers 사용 🐳
+
+**Testcontainers 도입 (선택)**:
+
+Phase 9 이후 PostgreSQL 특화 기능 테스트 시 고려:
+
+```csharp
+// tests/CollectionServer.IntegrationTests/Fixtures/PostgresTestContainerFixture.cs
+public class PostgresTestContainerFixture : IAsyncLifetime
+{
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
+        .WithImage("postgres:16-alpine")
+        .WithDatabase("testdb")
+        .WithUsername("testuser")
+        .WithPassword("testpass")
+        .Build();
+    
+    public string ConnectionString => _container.GetConnectionString();
+    
+    public async Task InitializeAsync()
+    {
+        await _container.StartAsync();
+    }
+    
+    public async Task DisposeAsync()
+    {
+        await _container.DisposeAsync();
     }
 }
 ```

@@ -95,9 +95,9 @@ public class MusicBrainzProvider : IMediaProvider
                 .SelectMany(m => m.Tracks ?? Array.Empty<MusicBrainzTrack>())
                 .Select(t => new Track
                 {
-                    Number = t.Position ?? 0,
+                    TrackNumber = t.Position ?? 0,
                     Title = t.Title ?? "Unknown",
-                    DurationSeconds = t.Length.HasValue ? t.Length.Value / 1000 : null
+                    DurationSeconds = t.Length.HasValue ? t.Length.Value / 1000 : 0
                 })
                 .ToList() ?? new List<Track>();
 

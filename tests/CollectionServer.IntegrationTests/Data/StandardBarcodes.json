@@ -1,0 +1,625 @@
+{
+  "description": "Phase 3 성공 기준 검증용 표준 바코드 샘플 (100개)",
+  "version": "1.0",
+  "total": 100,
+  "breakdown": {
+    "books": 30,
+    "movies": 30,
+    "music": 30,
+    "edgeCases": 10
+  },
+  "barcodes": {
+    "books": [
+      {
+        "barcode": "9788932917245",
+        "mediaType": "Book",
+        "title": "클린 코드",
+        "author": "로버트 C. 마틴",
+        "notes": "유명 기술서"
+      },
+      {
+        "barcode": "9788966262281",
+        "mediaType": "Book",
+        "title": "자바스크립트 완벽 가이드",
+        "author": "데이비드 플래너건"
+      },
+      {
+        "barcode": "9788979149098",
+        "mediaType": "Book",
+        "title": "이펙티브 자바",
+        "author": "조슈아 블로크"
+      },
+      {
+        "barcode": "9788966261024",
+        "mediaType": "Book",
+        "title": "리팩터링",
+        "author": "마틴 파울러"
+      },
+      {
+        "barcode": "9788960773417",
+        "mediaType": "Book",
+        "title": "헤드 퍼스트 디자인 패턴",
+        "author": "에릭 프리먼"
+      },
+      {
+        "barcode": "9788960777330",
+        "mediaType": "Book",
+        "title": "실용주의 프로그래머",
+        "author": "앤드루 헌트"
+      },
+      {
+        "barcode": "9788968481796",
+        "mediaType": "Book",
+        "title": "HTTP 완벽 가이드",
+        "author": "데이비드 고를리"
+      },
+      {
+        "barcode": "9788960778870",
+        "mediaType": "Book",
+        "title": "테스트 주도 개발",
+        "author": "켄트 벡"
+      },
+      {
+        "barcode": "9791158390754",
+        "mediaType": "Book",
+        "title": "가상 면접 사례로 배우는 대규모 시스템 설계 기초",
+        "author": "알렉스 쉬"
+      },
+      {
+        "barcode": "9788966262595",
+        "mediaType": "Book",
+        "title": "코딩 인터뷰 완전 분석",
+        "author": "게일 라크만 맥도웰"
+      },
+      {
+        "barcode": "9788960770959",
+        "mediaType": "Book",
+        "title": "객체지향의 사실과 오해",
+        "author": "조영호"
+      },
+      {
+        "barcode": "9791158392741",
+        "mediaType": "Book",
+        "title": "오브젝트",
+        "author": "조영호"
+      },
+      {
+        "barcode": "9788966262335",
+        "mediaType": "Book",
+        "title": "도메인 주도 설계",
+        "author": "에릭 에반스"
+      },
+      {
+        "barcode": "9788966263134",
+        "mediaType": "Book",
+        "title": "함수형 사고",
+        "author": "닐 포드"
+      },
+      {
+        "barcode": "9791158392178",
+        "mediaType": "Book",
+        "title": "쏙쏙 들어오는 함수형 코딩",
+        "author": "에릭 노먼드"
+      },
+      {
+        "barcode": "9788968483479",
+        "mediaType": "Book",
+        "title": "마이크로서비스 아키텍처 구축",
+        "author": "샘 뉴먼"
+      },
+      {
+        "barcode": "9791158391409",
+        "mediaType": "Book",
+        "title": "클린 아키텍처",
+        "author": "로버트 C. 마틴"
+      },
+      {
+        "barcode": "9788956746425",
+        "mediaType": "Book",
+        "title": "GoF의 디자인 패턴",
+        "author": "에릭 감마"
+      },
+      {
+        "barcode": "9788966262021",
+        "mediaType": "Book",
+        "title": "익스트림 프로그래밍",
+        "author": "켄트 벡"
+      },
+      {
+        "barcode": "9788966261208",
+        "mediaType": "Book",
+        "title": "소프트웨어 장인",
+        "author": "산드로 만쿠소"
+      },
+      {
+        "barcode": "9791158391386",
+        "mediaType": "Book",
+        "title": "좋은 코드, 나쁜 코드",
+        "author": "톰 롱"
+      },
+      {
+        "barcode": "9791158392772",
+        "mediaType": "Book",
+        "title": "함께 자라기",
+        "author": "김창준"
+      },
+      {
+        "barcode": "9788979149262",
+        "mediaType": "Book",
+        "title": "러닝 SQL",
+        "author": "앨런 볼리외"
+      },
+      {
+        "barcode": "9788960773134",
+        "mediaType": "Book",
+        "title": "피플웨어",
+        "author": "톰 드마르코"
+      },
+      {
+        "barcode": "9788960771345",
+        "mediaType": "Book",
+        "title": "맨먼스 미신",
+        "author": "프레더릭 브룩스"
+      },
+      {
+        "barcode": "9788966262434",
+        "mediaType": "Book",
+        "title": "생각하는 프로그래밍",
+        "author": "존 벤틀리"
+      },
+      {
+        "barcode": "9788960770706",
+        "mediaType": "Book",
+        "title": "CODE",
+        "author": "찰스 펫졸드"
+      },
+      {
+        "barcode": "9788960772144",
+        "mediaType": "Book",
+        "title": "프로그래밍 수련법",
+        "author": "브라이언 헬리"
+      },
+      {
+        "barcode": "9788979147551",
+        "mediaType": "Book",
+        "title": "알고리즘 문제 해결 전략",
+        "author": "구종만"
+      },
+      {
+        "barcode": "9788966262052",
+        "mediaType": "Book",
+        "title": "거장의 코드",
+        "author": "케빈 맥도날드"
+      }
+    ],
+    "movies": [
+      {
+        "barcode": "883929637560",
+        "mediaType": "Movie",
+        "title": "인셉션",
+        "format": "Blu-ray",
+        "notes": "크리스토퍼 놀란 감독"
+      },
+      {
+        "barcode": "883929301553",
+        "mediaType": "Movie",
+        "title": "다크 나이트",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "024543817239",
+        "mediaType": "Movie",
+        "title": "쇼생크 탈출",
+        "format": "DVD"
+      },
+      {
+        "barcode": "032429298850",
+        "mediaType": "Movie",
+        "title": "매트릭스",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "031398289579",
+        "mediaType": "Movie",
+        "title": "인터스텔라",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "032429298867",
+        "mediaType": "Movie",
+        "title": "반지의 제왕: 반지 원정대",
+        "format": "DVD"
+      },
+      {
+        "barcode": "786936856422",
+        "mediaType": "Movie",
+        "title": "어벤져스: 엔드게임",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "883929637577",
+        "mediaType": "Movie",
+        "title": "테넷",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "191329152591",
+        "mediaType": "Movie",
+        "title": "기생충",
+        "format": "Blu-ray",
+        "notes": "봉준호 감독"
+      },
+      {
+        "barcode": "032429342195",
+        "mediaType": "Movie",
+        "title": "블레이드 러너 2049",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "024543520344",
+        "mediaType": "Movie",
+        "title": "펄프 픽션",
+        "format": "DVD"
+      },
+      {
+        "barcode": "883904324577",
+        "mediaType": "Movie",
+        "title": "올드보이",
+        "format": "DVD",
+        "notes": "박찬욱 감독"
+      },
+      {
+        "barcode": "032429273857",
+        "mediaType": "Movie",
+        "title": "배트맨 비긴즈",
+        "format": "DVD"
+      },
+      {
+        "barcode": "191329152607",
+        "mediaType": "Movie",
+        "title": "헤어질 결심",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "883929746415",
+        "mediaType": "Movie",
+        "title": "덩케르크",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "024543520351",
+        "mediaType": "Movie",
+        "title": "포레스트 검프",
+        "format": "DVD"
+      },
+      {
+        "barcode": "032429298874",
+        "mediaType": "Movie",
+        "title": "해리 포터와 마법사의 돌",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "786936856439",
+        "mediaType": "Movie",
+        "title": "토이 스토리 3",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "032429342201",
+        "mediaType": "Movie",
+        "title": "라라랜드",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "024543817246",
+        "mediaType": "Movie",
+        "title": "그린 마일",
+        "format": "DVD"
+      },
+      {
+        "barcode": "883929637584",
+        "mediaType": "Movie",
+        "title": "프레스티지",
+        "format": "DVD"
+      },
+      {
+        "barcode": "032429298881",
+        "mediaType": "Movie",
+        "title": "반지의 제왕: 두 개의 탑",
+        "format": "DVD"
+      },
+      {
+        "barcode": "032429298898",
+        "mediaType": "Movie",
+        "title": "반지의 제왕: 왕의 귀환",
+        "format": "DVD"
+      },
+      {
+        "barcode": "786936856446",
+        "mediaType": "Movie",
+        "title": "겨울왕국",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "024543817253",
+        "mediaType": "Movie",
+        "title": "타이타닉",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "032429342218",
+        "mediaType": "Movie",
+        "title": "글래디에이터",
+        "format": "DVD"
+      },
+      {
+        "barcode": "883929637591",
+        "mediaType": "Movie",
+        "title": "메멘토",
+        "format": "DVD"
+      },
+      {
+        "barcode": "191329152614",
+        "mediaType": "Movie",
+        "title": "살인의 추억",
+        "format": "Blu-ray"
+      },
+      {
+        "barcode": "883904324584",
+        "mediaType": "Movie",
+        "title": "공동경비구역 JSA",
+        "format": "DVD"
+      },
+      {
+        "barcode": "191329152621",
+        "mediaType": "Movie",
+        "title": "범죄도시",
+        "format": "Blu-ray"
+      }
+    ],
+    "music": [
+      {
+        "barcode": "602547916969",
+        "mediaType": "MusicAlbum",
+        "title": "Abbey Road",
+        "artist": "The Beatles"
+      },
+      {
+        "barcode": "602547916976",
+        "mediaType": "MusicAlbum",
+        "title": "Sgt. Pepper's Lonely Hearts Club Band",
+        "artist": "The Beatles"
+      },
+      {
+        "barcode": "602527814018",
+        "mediaType": "MusicAlbum",
+        "title": "Thriller",
+        "artist": "Michael Jackson"
+      },
+      {
+        "barcode": "724382896920",
+        "mediaType": "MusicAlbum",
+        "title": "Dark Side of the Moon",
+        "artist": "Pink Floyd"
+      },
+      {
+        "barcode": "075021328006",
+        "mediaType": "MusicAlbum",
+        "title": "Nevermind",
+        "artist": "Nirvana"
+      },
+      {
+        "barcode": "602547249999",
+        "mediaType": "MusicAlbum",
+        "title": "Bohemian Rhapsody (OST)",
+        "artist": "Queen"
+      },
+      {
+        "barcode": "602577426796",
+        "mediaType": "MusicAlbum",
+        "title": "21",
+        "artist": "Adele"
+      },
+      {
+        "barcode": "602547916983",
+        "mediaType": "MusicAlbum",
+        "title": "Revolver",
+        "artist": "The Beatles"
+      },
+      {
+        "barcode": "724382896937",
+        "mediaType": "MusicAlbum",
+        "title": "The Wall",
+        "artist": "Pink Floyd"
+      },
+      {
+        "barcode": "075021328013",
+        "mediaType": "MusicAlbum",
+        "title": "In Utero",
+        "artist": "Nirvana"
+      },
+      {
+        "barcode": "602527814025",
+        "mediaType": "MusicAlbum",
+        "title": "Bad",
+        "artist": "Michael Jackson"
+      },
+      {
+        "barcode": "602577426802",
+        "mediaType": "MusicAlbum",
+        "title": "25",
+        "artist": "Adele"
+      },
+      {
+        "barcode": "602547916990",
+        "mediaType": "MusicAlbum",
+        "title": "Rubber Soul",
+        "artist": "The Beatles"
+      },
+      {
+        "barcode": "724382896944",
+        "mediaType": "MusicAlbum",
+        "title": "Wish You Were Here",
+        "artist": "Pink Floyd"
+      },
+      {
+        "barcode": "602547250005",
+        "mediaType": "MusicAlbum",
+        "title": "Greatest Hits",
+        "artist": "Queen"
+      },
+      {
+        "barcode": "602527814032",
+        "mediaType": "MusicAlbum",
+        "title": "Dangerous",
+        "artist": "Michael Jackson"
+      },
+      {
+        "barcode": "075021328020",
+        "mediaType": "MusicAlbum",
+        "title": "MTV Unplugged in New York",
+        "artist": "Nirvana"
+      },
+      {
+        "barcode": "602577426819",
+        "mediaType": "MusicAlbum",
+        "title": "19",
+        "artist": "Adele"
+      },
+      {
+        "barcode": "602547917003",
+        "mediaType": "MusicAlbum",
+        "title": "Let It Be",
+        "artist": "The Beatles"
+      },
+      {
+        "barcode": "724382896951",
+        "mediaType": "MusicAlbum",
+        "title": "Animals",
+        "artist": "Pink Floyd"
+      },
+      {
+        "barcode": "602547250012",
+        "mediaType": "MusicAlbum",
+        "title": "A Night at the Opera",
+        "artist": "Queen"
+      },
+      {
+        "barcode": "602527814049",
+        "mediaType": "MusicAlbum",
+        "title": "Off the Wall",
+        "artist": "Michael Jackson"
+      },
+      {
+        "barcode": "602547917010",
+        "mediaType": "MusicAlbum",
+        "title": "The White Album",
+        "artist": "The Beatles"
+      },
+      {
+        "barcode": "724382896968",
+        "mediaType": "MusicAlbum",
+        "title": "The Division Bell",
+        "artist": "Pink Floyd"
+      },
+      {
+        "barcode": "602547250029",
+        "mediaType": "MusicAlbum",
+        "title": "News of the World",
+        "artist": "Queen"
+      },
+      {
+        "barcode": "602577426826",
+        "mediaType": "MusicAlbum",
+        "title": "30",
+        "artist": "Adele"
+      },
+      {
+        "barcode": "602547917027",
+        "mediaType": "MusicAlbum",
+        "title": "Help!",
+        "artist": "The Beatles"
+      },
+      {
+        "barcode": "724382896975",
+        "mediaType": "MusicAlbum",
+        "title": "Meddle",
+        "artist": "Pink Floyd"
+      },
+      {
+        "barcode": "602547250036",
+        "mediaType": "MusicAlbum",
+        "title": "The Game",
+        "artist": "Queen"
+      },
+      {
+        "barcode": "602527814056",
+        "mediaType": "MusicAlbum",
+        "title": "HIStory",
+        "artist": "Michael Jackson"
+      }
+    ],
+    "edgeCases": [
+      {
+        "barcode": "043942089X",
+        "mediaType": "Book",
+        "title": "The C Programming Language",
+        "notes": "ISBN-10 with X check digit"
+      },
+      {
+        "barcode": "9790000000000",
+        "mediaType": "Book",
+        "title": "979 prefix book",
+        "notes": "979 prefix ISBN-13"
+      },
+      {
+        "barcode": "978 8932917245",
+        "mediaType": "Book",
+        "title": "클린 코드 (공백 포함)",
+        "notes": "Spaces in barcode"
+      },
+      {
+        "barcode": "978-8932917245",
+        "mediaType": "Book",
+        "title": "클린 코드 (대시 포함)",
+        "notes": "Dashes in barcode"
+      },
+      {
+        "barcode": "012345678905",
+        "mediaType": "Unknown",
+        "title": "UPC without external API",
+        "notes": "Should require TMDb/MusicBrainz lookup"
+      },
+      {
+        "barcode": "1234567890128",
+        "mediaType": "Unknown",
+        "title": "EAN-13 not starting with 978/979",
+        "notes": "Should be treated as Movie/Music"
+      },
+      {
+        "barcode": "9999999999999",
+        "mediaType": "Unknown",
+        "title": "Invalid barcode",
+        "notes": "Should return 404 (not found in any database)"
+      },
+      {
+        "barcode": "9788932917245",
+        "mediaType": "Book",
+        "title": "클린 코드 (duplicate test)",
+        "notes": "Same as books[0] - test caching"
+      },
+      {
+        "barcode": "5000000000000",
+        "mediaType": "Unknown",
+        "title": "EAN-13 with 5 prefix",
+        "notes": "Edge case prefix"
+      },
+      {
+        "barcode": "6000000000000",
+        "mediaType": "Unknown",
+        "title": "EAN-13 with 6 prefix",
+        "notes": "Edge case prefix"
+      }
+    ]
+  }
+}

@@ -267,8 +267,8 @@ public class MediaRepositoryIntegrationTests
             Genre = "Rock",
             Tracks = new List<Track>
             {
-                new() { Number = 1, Title = "첫 번째 곡", DurationSeconds = 180 },
-                new() { Number = 2, Title = "두 번째 곡", DurationSeconds = 240 }
+                new() { TrackNumber = 1, Title = "첫 번째 곡", DurationSeconds = 180 },
+                new() { TrackNumber = 2, Title = "두 번째 곡", DurationSeconds = 240 }
             },
             MediaType = MediaType.MusicAlbum
         };

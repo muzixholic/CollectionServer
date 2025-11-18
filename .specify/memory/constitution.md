@@ -61,6 +61,7 @@ Follow-up Items:
 **필수 요구사항**:
 - **언어**: C# (최신 언어 기능 활용 권장)
 - **프레임워크**: .NET 10
+- **ORM**: Entity Framework Core (프레임워크 버전과 일치하는 메이저 버전 사용)
 - **프로젝트 형식**: .csproj 기반 프로젝트 구조
 - **패키지 관리**: NuGet 사용
 - **빌드 도구**: dotnet CLI

@@ -46,7 +46,10 @@ public class MediaItemConfiguration : IEntityTypeConfiguration<MediaItem>
         builder.Property(m => m.UpdatedAt)
             .IsRequired();
 
-        // TPT (Table Per Type) 상속 전략
-        builder.UseTptMappingStrategy();
+        // TPH (Table Per Hierarchy) 상속 전략으로 변경 (EF Core 10 호환)
+        builder.HasDiscriminator<string>("MediaType")
+            .HasValue<Book>("Book")
+            .HasValue<Movie>("Movie")
+            .HasValue<MusicAlbum>("MusicAlbum");
     }
 }

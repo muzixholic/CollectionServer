@@ -49,12 +49,17 @@ tests/
 - [X] T008 [P] tests/CollectionServer.ContractTests 프로젝트 생성 (xUnit)
 - [X] T009 프로젝트 간 참조 추가 (Api → Core, Infrastructure; Infrastructure → Core)
 - [X] T010 [P] Api 프로젝트에 필수 NuGet 패키지 추가 (Swashbuckle.AspNetCore, Serilog.AspNetCore)
-- [X] T011 [P] Infrastructure 프로젝트에 EF Core 패키지 추가 (Microsoft.EntityFrameworkCore, Npgsql.EntityFrameworkCore.PostgreSQL)
+- [X] T011 [P] Infrastructure 프로젝트에 EF Core 패키지 추가
+  - Microsoft.EntityFrameworkCore (실제 사용 가능한 최신 버전, .NET 10 Preview 시점에서는 버전 명시)
+  - Npgsql.EntityFrameworkCore.PostgreSQL (EF Core 버전 호환)
+  - Microsoft.EntityFrameworkCore.Design (마이그레이션 도구)
+  - **참고**: `dotnet add package` 실행 시 `--version` 옵션으로 호환 버전 명시적 지정
 - [X] T012 [P] 테스트 프로젝트에 테스트 프레임워크 패키지 추가 (xUnit, Moq, FluentAssertions)
 - [X] T013 [P] .gitignore 파일 생성 (.NET 표준 템플릿)
 - [X] T014 [P] README.md 파일 생성 (프로젝트 개요, 실행 방법)
 - [X] T015 [P] Containerfile 생성 (Podman 빌드용 멀티 스테이지)
 - [X] T016 [P] podman-compose.yml 생성 (PostgreSQL + API 서비스)
+- [ ] T016.1 [P] specs/001-isbn-book-api/data-model.md 생성 (엔티티 ERD, 필드 정의, 제약 조건, Track 값 객체 포함)
 
 ---
 
@@ -129,6 +134,10 @@ tests/
 - [ ] T052 [P] [US1] tests/CollectionServer.UnitTests/Services/BarcodeValidatorTests.cs 생성 (ISBN-10/13, UPC, EAN 검증)
 - [ ] T053 [P] [US1] tests/CollectionServer.UnitTests/Services/MediaServiceTests.cs 생성 (Database-First 로직 테스트)
 - [ ] T054 [P] [US1] tests/CollectionServer.UnitTests/Repositories/MediaRepositoryTests.cs 생성 (CRUD 작업 테스트)
+- [ ] T054.1 [P] [US1] tests/CollectionServer.UnitTests/EdgeCases/BarcodeEdgeCaseTests.cs 생성 (체크 디지트 오류, 공백/대시 정규화, 잘못된 길이)
+- [ ] T054.2 [P] [US1] tests/CollectionServer.UnitTests/EdgeCases/BookEdgeCaseTests.cs 생성 (여러 저자, 표지 없음, 충돌 데이터, 설명 없음)
+- [ ] T054.3 [P] [US1] tests/CollectionServer.UnitTests/EdgeCases/MovieEdgeCaseTests.cs 생성 (Blu-ray/DVD 구분, 여러 감독, 출연진 제한, 미등급)
+- [ ] T054.4 [P] [US1] tests/CollectionServer.UnitTests/EdgeCases/MusicAlbumEdgeCaseTests.cs 생성 (컴필레이션, 다중 디스크, 트랙 없음, 재발매)
 
 ### 사용자 스토리 1을 위한 통합 테스트
 
@@ -154,6 +163,7 @@ tests/
 - [ ] T068 [US1] GET /health 엔드포인트로 데이터베이스 연결 확인
 - [ ] T069 [US1] 잘못된 바코드 형식으로 400 Bad Request 응답 검증
 - [ ] T070 [US1] 존재하지 않는 바코드로 404 Not Found 응답 검증 (외부 API 없이)
+- [ ] T070.1 [US1] tests/CollectionServer.IntegrationTests/Data/StandardBarcodes.json 생성 (100개 검증용 바코드 큐레이션: 도서 30개, 영화 30개, 음악 30개, 엣지 케이스 10개)
 
 **체크포인트 (Checkpoint)**: 이 시점에서 사용자 스토리 1은 완전히 기능하고 독립적으로 테스트 가능해야 합니다 (외부 API 통합 제외)
 
@@ -161,7 +171,13 @@ tests/
 
 ## Phase 4: 사용자 스토리 2 - 최종 사용자의 미디어 발견 (우선순위: P1)
 
-**목표 (Goal)**: 외부 API 통합을 추가하여 다양한 미디어 유형(도서, 영화, 음악)의 완전한 정보를 제공. 우선순위 기반 폴백 전략 구현.
+**목표 (Goal)**: 외부 API 통합 및 **기본 우선순위 폴백** 구현. 각 미디어 유형별 1순위 Provider 성공 시 즉시 반환.
+
+**범위**:
+- 7개 외부 API Provider 구현
+- 각 Provider에 Priority 속성 추가
+- MediaService에 기본 우선순위 정렬 로직 추가 (OrderBy Priority)
+- 1순위 Provider 실패 시 2순위로 폴백 (단순 루프)
 
 **독립 테스트 (Independent Test)**: 데이터베이스에 없는 유효한 ISBN-13으로 조회 시 Google Books API에서 정보를 가져와 200 OK 반환. 응답에 제목, 저자, 표지 이미지 URL 등 모든 필드 포함 확인.
 
@@ -169,7 +185,7 @@ tests/
 
 - [X] T071 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/GoogleBooksProviderTests.cs 생성 (Mock HTTP 응답)
 - [X] T072 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/KakaoBookProviderTests.cs 생성
-- [X] T073 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/AladinApiProviderTests.cs 생성
+- [X] T073 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/AladinProviderTests.cs 생성
 - [X] T074 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/TMDbProviderTests.cs 생성
 - [X] T075 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/OMDbProviderTests.cs 생성
 - [X] T076 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/MusicBrainzProviderTests.cs 생성
@@ -184,7 +200,7 @@ tests/
 
 - [X] T080 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/GoogleBooksProvider.cs 구현 (IMediaProvider)
 - [X] T081 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/KakaoBookProvider.cs 구현
-- [X] T082 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/AladinApiProvider.cs 구현
+- [X] T082 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/AladinProvider.cs 구현
 - [X] T083 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/TMDbProvider.cs 구현
 - [X] T084 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/OMDbProvider.cs 구현
 - [X] T085 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Music/MusicBrainzProvider.cs 구현
@@ -295,7 +311,13 @@ tests/
 
 ## Phase 7: 사용자 스토리 5 - 외부 데이터 소스 우선순위 및 폴백 (우선순위: P1)
 
-**목표 (Goal)**: 각 미디어 유형에 대해 최적의 외부 API를 우선순위에 따라 조회하고, 실패 시 자동으로 다음 소스로 폴백.
+**목표 (Goal)**: **고급 폴백 전략** 강화. 멀티소스 실패 처리, 상세 로깅, 폴백 메트릭 수집.
+
+**범위**:
+- 모든 우선순위 소스를 순차 시도하는 완전한 폴백 루프 (Phase 4에서 기본 구현된 것을 강화)
+- 각 소스 실패 시 상세 로깅 추가 (어떤 소스 시도했는지, 실패 이유)
+- 폴백 통계 수집 (선택)
+- 데이터 완전성 비교 로직 (선택, Phase 9 이후 고려)
 
 **독립 테스트 (Independent Test)**: 첫 번째 우선순위 API를 Mock으로 실패시켰을 때 두 번째 우선순위 API로 자동 폴백하여 정상 응답 반환 확인.
 
@@ -349,7 +371,12 @@ tests/
 
 - [X] T154 [US6] Program.cs에 AddRateLimiter 구성 확인 (이미 Phase 2에서 추가됨)
 - [X] T155 [US6] Rate Limiting 정책 세부 조정 (PermitLimit: 100, Window: 1분, QueueLimit: 10)
-- [ ] T156 [US6] Rate Limit 초과 시 커스텀 응답 메시지 추가 (한국어)
+- [ ] T156 [US6] Rate Limit 초과 시 커스텀 응답 및 Retry-After 헤더 추가
+  - 한국어 오류 메시지
+  - Retry-After 헤더 (초 단위)
+  - X-RateLimit-Limit 헤더 (100)
+  - X-RateLimit-Remaining 헤더 (남은 요청 수)
+  - X-RateLimit-Reset 헤더 (윈도우 리셋 시각, Unix timestamp)
 - [X] T157 [US6] Rate Limit 설정을 appsettings.json으로 외부화
 - [X] T158 [US6] Serilog에 Rate Limit 이벤트 로깅 추가
 
@@ -512,7 +539,7 @@ T080, T081, T082, T083, T084, T085, T086  # Provider 구현
 # 동시에 작업 가능:
 작업 T080: "GoogleBooksProvider 구현"
 작업 T081: "KakaoBookProvider 구현"
-작업 T082: "AladinApiProvider 구현"
+작업 T082: "AladinProvider 구현"
 작업 T083: "TMDbProvider 구현"
 작업 T084: "OMDbProvider 구현"
 작업 T085: "MusicBrainzProvider 구현"
@@ -612,42 +639,91 @@ T080, T081, T082, T083, T084, T085, T086  # Provider 구현
 
 ## 성공 기준 (Success Criteria)
 
-### 기능 성공 기준
+**정의**: `/specs/001-isbn-book-api/spec.md` Lines 234-257의 SC-001 ~ SC-008 참조
 
-- ✅ GET /items/{barcode} 엔드포인트가 모든 바코드 형식 지원 (ISBN-10/13, UPC, EAN-13)
-- ✅ Database-First 아키텍처 작동 (데이터베이스 우선 조회, 외부 API 폴백)
-- ✅ 7개 외부 API 모두 통합 (Google Books, Kakao, Aladin, TMDb, OMDb, MusicBrainz, Discogs)
-- ✅ 우선순위 기반 폴백 전략 작동 (한 소스 실패 시 다음 소스로 자동 전환)
-- ✅ 모든 오류 시나리오에 대해 적절한 HTTP 상태 코드 반환 (400, 404, 429, 500, 503)
-- ✅ Rate Limiting 작동 (100 req/min)
-- ✅ OpenAPI/Swagger 문서 생성 및 접근 가능
+### 측정 방법 및 검증 전략
 
-### 성능 성공 기준
+#### SC-001: 95%+ 완전한 정보 반환
+- **측정 도구**: `tests/CollectionServer.IntegrationTests/Data/StandardBarcodes.json` (100개 검증 세트)
+- **실행 명령**: `dotnet test --filter FullyQualifiedName~StandardBarcodeTests`
+- **통과 기준**: 95개 이상 200 OK 응답 + 필수 필드 존재 (Title, 메타데이터, ReleaseDate)
+  
+#### SC-002: 응답 시간 목표
+- **측정 도구**: `tests/CollectionServer.IntegrationTests/PerformanceTests/ResponseTimeTests.cs`
+- **실행 명령**: `dotnet test --filter FullyQualifiedName~ResponseTimeTests`
+- **통과 기준**: 
+  - 데이터베이스 조회: P99 < 500ms
+  - 외부 API 조회: P99 < 2초
+  
+#### SC-003: 바코드 검증 정확도
+- **측정 도구**: `tests/CollectionServer.UnitTests/Services/BarcodeValidatorTests.cs`
+- **실행 명령**: `dotnet test --filter FullyQualifiedName~BarcodeValidatorTests`
+- **통과 기준**: 1000개 테스트 케이스 중 999개 이상 정확 (99.9%)
+  
+#### SC-004: Database-First 캐싱 효과
+- **측정 도구**: `tests/CollectionServer.IntegrationTests/PerformanceTests/CachingEffectTests.cs`
+- **실행 명령**: 워크로드 시뮬레이션 (동일 바코드 20% 재조회)
+- **통과 기준**: 외부 API 호출 80% 감소 (캐싱 히트 비율)
+  
+#### SC-005: 우선순위 폴백 성공률
+- **측정 도구**: `tests/CollectionServer.IntegrationTests/ApiTests/PriorityFallbackTests.cs`
+- **실행 명령**: 1순위 API Mock 실패 시나리오
+- **통과 기준**: 90% 이상 2-3순위 폴백으로 성공
+  
+#### SC-006: Rate Limiting 정책
+- **측정 도구**: `tests/CollectionServer.IntegrationTests/ApiTests/RateLimitingTests.cs`
+- **실행 명령**: 1분 내 110개 요청 전송
+- **통과 기준**: 100개 성공, 10개 429 응답, Retry-After 헤더 존재
+  
+#### SC-007: 오류 메시지 명확성
+- **측정 도구**: `tests/CollectionServer.IntegrationTests/ApiTests/ErrorHandlingTests.cs`
+- **실행 명령**: 모든 오류 시나리오 (400, 404, 429, 503) 테스트
+- **통과 기준**: 모든 오류 응답에 한국어 메시지 + 해결 방법 포함
+  
+#### SC-008: 외부 API 장애 처리
+- **측정 도구**: `tests/CollectionServer.IntegrationTests/ApiTests/ExternalApiFailureTests.cs`
+- **실행 명령**: Mock으로 외부 API 타임아웃/500 오류 시뮬레이션
+- **통과 기준**: 적절한 HTTP 상태 (503) + Retry 가능 메시지
 
-- ✅ 데이터베이스 조회 응답 시간 < 500ms
-- ✅ 외부 API 조회 응답 시간 < 2초
-- ✅ 동시 100개 요청 처리 가능
-- ✅ 데이터베이스 캐싱으로 외부 API 호출 80% 이상 감소
+### 종합 검증 스크립트
 
-### 테스트 성공 기준
+```bash
+#!/bin/bash
+# tests/run-success-criteria.sh
 
-- ✅ 단위 테스트 커버리지 80% 이상
-- ✅ 모든 통합 테스트 통과
-- ✅ 계약 테스트로 OpenAPI 스키마 검증
-- ✅ 오류 시나리오 E2E 테스트 통과
+echo "=== Success Criteria 검증 시작 ==="
 
-### 배포 성공 기준
+echo "SC-001: 완전한 정보 반환 (95%+)"
+dotnet test --filter "FullyQualifiedName~StandardBarcodeTests" --logger "console;verbosity=minimal"
 
-- ✅ Podman 컨테이너로 빌드 및 실행 가능
-- ✅ podman-compose로 전체 스택 실행 가능
-- ✅ quickstart.md 가이드대로 처음부터 설치 가능
-- ✅ 프로덕션 환경 설정 완료 (HTTPS, 환경 변수)
+echo "SC-002: 응답 시간"
+dotnet test --filter "FullyQualifiedName~ResponseTimeTests" --logger "console;verbosity=minimal"
+
+echo "SC-003: 바코드 검증 정확도"
+dotnet test --filter "FullyQualifiedName~BarcodeValidatorTests" --logger "console;verbosity=minimal"
+
+echo "SC-004~SC-008: 나머지 기준"
+dotnet test --filter "FullyQualifiedName~SuccessCriteriaTests" --logger "console;verbosity=minimal"
+
+echo "=== 검증 완료 ==="
+```
 
 ---
 
 ## 타임라인 예측 (Estimated Timeline)
 
-**가정**: 1명의 풀타임 개발자
+**가정**:
+- **개발자 숙련도**: 중급 이상 (C#, ASP.NET Core 2년+ 경험)
+- **외부 API 경험**: REST API 통합 경험 있음
+- **작업 시간**: 1명 풀타임 (하루 6-8시간 순수 개발 시간, 회의/인터럽트 제외)
+- **도메인 지식**: 기본적인 미디어 메타데이터 이해
+- **불확실성 요소**:
+  - 외부 API 문서 품질에 따라 ±2일
+  - 복잡한 버그 발생 시 ±3일
+  - 새로운 .NET 10 기능 학습 시간 미포함
+  - 외부 API Rate Limit으로 인한 개발 지연 가능
+
+**Phase별 예상 기간**:
 
 - **Phase 1 (설정)**: 1일 (T001-T016)
 - **Phase 2 (기반)**: 3-4일 (T017-T049)

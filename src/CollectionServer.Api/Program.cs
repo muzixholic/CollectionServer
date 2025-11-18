@@ -1,6 +1,7 @@
 using CollectionServer.Api.Extensions;
 using CollectionServer.Api.Middleware;
 using CollectionServer.Core.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,22 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // 서비스 등록
-builder.Services.AddDatabaseServices(builder.Configuration);
+// 개발 환경에서는 InMemory DB 사용 (EF Core 10 + Npgsql preview 호환성 문제 회피)
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDbContext<CollectionServer.Infrastructure.Data.ApplicationDbContext>(options =>
+        options.UseInMemoryDatabase("CollectionServerDev"));
+    
+    // Core 서비스 등록
+    builder.Services.AddSingleton<CollectionServer.Core.Services.BarcodeValidator>();
+    builder.Services.AddScoped<IMediaRepository, CollectionServer.Infrastructure.Repositories.MediaRepository>();
+    builder.Services.AddScoped<IMediaService, CollectionServer.Core.Services.MediaService>();
+}
+else
+{
+    builder.Services.AddDatabaseServices(builder.Configuration);
+}
+
 builder.Services.AddExternalApiSettings(builder.Configuration);
 builder.Services.AddRateLimitingServices();
 

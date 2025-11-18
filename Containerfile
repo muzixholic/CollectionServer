@@ -30,4 +30,9 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 USER appuser
 
 COPY --from=publish /app/publish .
+
+# Health Check 구성
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
 ENTRYPOINT ["dotnet", "CollectionServer.Api.dll"]

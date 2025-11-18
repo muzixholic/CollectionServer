@@ -331,6 +331,81 @@ psql -U collectionuser -d collectiondb -h localhost
 \q
 ```
 
+### 4.5 마이그레이션 관리 전략
+
+#### 스키마 변경 시 새 마이그레이션 추가
+
+```bash
+# 1. 엔티티 수정 (예: Book에 Subtitle 필드 추가)
+# src/CollectionServer.Core/Entities/Book.cs에 필드 추가
+
+# 2. 새 마이그레이션 생성
+cd src/CollectionServer.Infrastructure
+dotnet ef migrations add AddBookSubtitle --startup-project ../CollectionServer.Api
+
+# 3. 생성된 SQL 검토 (프로덕션 배포 전 필수)
+dotnet ef migrations script AddBookSubtitle --startup-project ../CollectionServer.Api
+
+# 4. 데이터베이스에 적용
+dotnet ef database update --startup-project ../CollectionServer.Api
+```
+
+#### 프로덕션 배포 전략
+
+**옵션 A: SQL 스크립트 생성 (권장)**
+```bash
+# Idempotent 스크립트 생성 (반복 실행 안전)
+dotnet ef migrations script --idempotent --output migration.sql --startup-project ../CollectionServer.Api
+
+# DBA가 프로덕션 DB에 수동 실행
+psql -h production-db.example.com -U admin -d collectiondb -f migration.sql
+```
+
+**옵션 B: CI/CD 파이프라인 자동화**
+```yaml
+# .github/workflows/deploy.yml 예시
+- name: Apply Migrations
+  run: |
+    dotnet ef database update --startup-project src/CollectionServer.Api \
+      --connection "${{ secrets.DB_CONNECTION_STRING }}"
+```
+
+#### 마이그레이션 롤백
+
+```bash
+# 이전 마이그레이션으로 롤백
+dotnet ef database update PreviousMigrationName --startup-project ../CollectionServer.Api
+
+# 모든 마이그레이션 제거 (주의! 개발 환경만)
+dotnet ef database update 0 --startup-project ../CollectionServer.Api
+
+# 마이그레이션 파일 삭제
+dotnet ef migrations remove --startup-project ../CollectionServer.Api
+```
+
+#### 베스트 프랙티스
+
+1. **마이그레이션 이름**: 명확한 의미 전달 (예: `AddBookSubtitle`, `AddIndexOnBarcode`)
+2. **SQL 검토**: 프로덕션 배포 전 반드시 `migrations script` 실행하여 SQL 확인
+3. **Git 커밋**: 마이그레이션 파일은 반드시 Git에 커밋
+4. **데이터 마이그레이션**: 데이터 변환이 필요한 경우 `migrationBuilder.Sql()` 사용
+5. **롤백 계획**: 각 마이그레이션의 Down() 메서드 검증
+
+#### 트러블슈팅
+
+**오류: "The migration '...' has already been applied"**
+```bash
+# 마이그레이션 히스토리 확인
+dotnet ef migrations list --startup-project ../CollectionServer.Api
+
+# 데이터베이스 직접 확인
+psql -d collectiondb -c "SELECT * FROM \"__EFMigrationsHistory\";"
+```
+
+**오류: "No DbContext was found"**
+- `ApplicationDbContext`가 Api 프로젝트에 DI 등록되었는지 확인
+- `--startup-project` 옵션이 올바른지 확인
+
 ---
 
 ## 5. 애플리케이션 실행
