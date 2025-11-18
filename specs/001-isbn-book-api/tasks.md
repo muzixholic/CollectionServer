@@ -168,12 +168,12 @@ tests/
 ### 사용자 스토리 2를 위한 단위 테스트
 
 - [X] T071 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/GoogleBooksProviderTests.cs 생성 (Mock HTTP 응답)
-- [ ] T072 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/KakaoBookProviderTests.cs 생성
-- [ ] T073 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/AladinApiProviderTests.cs 생성
-- [ ] T074 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/TMDbProviderTests.cs 생성
-- [ ] T075 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/OMDbProviderTests.cs 생성
-- [ ] T076 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/MusicBrainzProviderTests.cs 생성
-- [ ] T077 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/DiscogsProviderTests.cs 생성
+- [X] T072 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/KakaoBookProviderTests.cs 생성
+- [X] T073 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/AladinApiProviderTests.cs 생성
+- [X] T074 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/TMDbProviderTests.cs 생성
+- [X] T075 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/OMDbProviderTests.cs 생성
+- [X] T076 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/MusicBrainzProviderTests.cs 생성
+- [X] T077 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/DiscogsProviderTests.cs 생성
 
 ### 사용자 스토리 2를 위한 통합 테스트
 
@@ -221,7 +221,7 @@ tests/
 
 ### 사용자 스토리 3을 위한 단위 테스트
 
-- [ ] T100 [P] [US3] tests/CollectionServer.UnitTests/Middleware/ErrorHandlingMiddlewareTests.cs 생성
+- [X] T100 [P] [US3] tests/CollectionServer.UnitTests/Middleware/ErrorHandlingMiddlewareTests.cs 생성
 - [ ] T101 [P] [US3] tests/CollectionServer.UnitTests/Services/ErrorResponseTests.cs 생성 (오류 응답 형식 검증)
 
 ### 사용자 스토리 3을 위한 통합 테스트
@@ -231,12 +231,12 @@ tests/
 
 ### 사용자 스토리 3을 위한 구현
 
-- [ ] T104 [P] [US3] src/CollectionServer.Api/Models/ErrorResponse.cs 생성 (오류 응답 DTO)
-- [ ] T105 [US3] ErrorHandlingMiddleware에 InvalidBarcodeException 처리 추가 (400 Bad Request)
-- [ ] T106 [US3] ErrorHandlingMiddleware에 NotFoundException 처리 추가 (404 Not Found)
-- [ ] T107 [US3] ErrorHandlingMiddleware에 RateLimitExceededException 처리 추가 (429 Too Many Requests)
-- [ ] T108 [US3] ErrorHandlingMiddleware에 일반 Exception 처리 추가 (500 Internal Server Error)
-- [ ] T109 [US3] ErrorHandlingMiddleware에 한국어 오류 메시지 추가
+- [X] T104 [P] [US3] src/CollectionServer.Api/Models/ErrorResponse.cs 생성 (오류 응답 DTO)
+- [X] T105 [US3] ErrorHandlingMiddleware에 InvalidBarcodeException 처리 추가 (400 Bad Request)
+- [X] T106 [US3] ErrorHandlingMiddleware에 NotFoundException 처리 추가 (404 Not Found)
+- [X] T107 [US3] ErrorHandlingMiddleware에 RateLimitExceededException 처리 추가 (429 Too Many Requests)
+- [X] T108 [US3] ErrorHandlingMiddleware에 일반 Exception 처리 추가 (500 Internal Server Error)
+- [X] T109 [US3] ErrorHandlingMiddleware에 한국어 오류 메시지 추가
 - [ ] T110 [US3] Program.cs의 Minimal API 엔드포인트에 Result 타입 반환 추가 (TypedResults 사용)
 - [ ] T111 [US3] OpenAPI 스키마에 모든 오류 응답 명세 추가 (.Produces<ErrorResponse>)
 - [ ] T112 [US3] BarcodeValidator에서 상세 검증 오류 메시지 생성 (예상 형식 설명 포함)
@@ -274,12 +274,12 @@ tests/
 ### 사용자 스토리 4를 위한 최적화 구현
 
 - [ ] T124 [US4] MediaRepository에 Compiled Queries 추가 (EF.CompileAsyncQuery)
-- [ ] T125 [US4] MediaRepository에 AsNoTracking 추가 (읽기 전용 쿼리)
-- [ ] T126 [US4] ApplicationDbContext에 인덱스 추가 (Barcode UNIQUE INDEX)
+- [X] T125 [US4] MediaRepository에 AsNoTracking 추가 (읽기 전용 쿼리)
+- [X] T126 [US4] ApplicationDbContext에 인덱스 추가 (Barcode UNIQUE INDEX)
 - [ ] T127 [US4] MediaService에 동시 요청 처리 로직 추가 (SemaphoreSlim으로 중복 호출 방지)
-- [ ] T128 [US4] Program.cs에 데이터베이스 연결 풀 설정 추가 (MaxPoolSize, Timeout)
-- [ ] T129 [US4] Serilog에 응답 시간 로깅 추가 (데이터베이스 vs 외부 API 구분)
-- [ ] T130 [US4] ApplicationDbContext에 UpdatedAt 자동 업데이트 트리거 설정 (PostgreSQL)
+- [X] T128 [US4] Program.cs에 데이터베이스 연결 풀 설정 추가 (MaxPoolSize, Timeout)
+- [X] T129 [US4] Serilog에 응답 시간 로깅 추가 (데이터베이스 vs 외부 API 구분)
+- [X] T130 [US4] ApplicationDbContext에 UpdatedAt 자동 업데이트 트리거 설정 (PostgreSQL)
 
 ### 사용자 스토리 4를 위한 검증
 
@@ -310,14 +310,14 @@ tests/
 
 ### 사용자 스토리 5를 위한 구현
 
-- [ ] T139 [US5] IMediaProvider에 Priority 속성 추가 (int, 낮을수록 높은 우선순위)
-- [ ] T140 [US5] 각 Provider 구현체에 Priority 값 설정 (GoogleBooks: 1, Kakao: 2, Aladin: 3...)
-- [ ] T141 [US5] MediaService에 Provider 정렬 로직 추가 (_providers.OrderBy(p => p.Priority))
-- [ ] T142 [US5] MediaService에 폴백 루프 구현 (foreach provider, try-catch)
-- [ ] T143 [US5] 각 Provider에 HTTP Timeout 설정 (10초)
-- [ ] T144 [US5] 각 Provider에 실패 시 null 반환 로직 추가 (예외 대신)
-- [ ] T145 [US5] MediaService에 모든 소스 실패 시 로깅 추가 (어떤 소스들을 시도했는지)
-- [ ] T146 [US5] ExternalApiSettings에 각 API별 우선순위 구성 추가 (appsettings.json)
+- [X] T139 [US5] IMediaProvider에 Priority 속성 추가 (int, 낮을수록 높은 우선순위)
+- [X] T140 [US5] 각 Provider 구현체에 Priority 값 설정 (GoogleBooks: 1, Kakao: 2, Aladin: 3...)
+- [X] T141 [US5] MediaService에 Provider 정렬 로직 추가 (_providers.OrderBy(p => p.Priority))
+- [X] T142 [US5] MediaService에 폴백 루프 구현 (foreach provider, try-catch)
+- [X] T143 [US5] 각 Provider에 HTTP Timeout 설정 (10초)
+- [X] T144 [US5] 각 Provider에 실패 시 null 반환 로직 추가 (예외 대신)
+- [X] T145 [US5] MediaService에 모든 소스 실패 시 로깅 추가 (어떤 소스들을 시도했는지)
+- [X] T146 [US5] ExternalApiSettings에 각 API별 우선순위 구성 추가 (appsettings.json)
 
 ### 사용자 스토리 5를 위한 검증
 
@@ -347,11 +347,11 @@ tests/
 
 ### 사용자 스토리 6을 위한 구현
 
-- [ ] T154 [US6] Program.cs에 AddRateLimiter 구성 확인 (이미 Phase 2에서 추가됨)
-- [ ] T155 [US6] Rate Limiting 정책 세부 조정 (PermitLimit: 100, Window: 1분, QueueLimit: 10)
+- [X] T154 [US6] Program.cs에 AddRateLimiter 구성 확인 (이미 Phase 2에서 추가됨)
+- [X] T155 [US6] Rate Limiting 정책 세부 조정 (PermitLimit: 100, Window: 1분, QueueLimit: 10)
 - [ ] T156 [US6] Rate Limit 초과 시 커스텀 응답 메시지 추가 (한국어)
-- [ ] T157 [US6] Rate Limit 설정을 appsettings.json으로 외부화
-- [ ] T158 [US6] Serilog에 Rate Limit 이벤트 로깅 추가
+- [X] T157 [US6] Rate Limit 설정을 appsettings.json으로 외부화
+- [X] T158 [US6] Serilog에 Rate Limit 이벤트 로깅 추가
 
 ### 사용자 스토리 6을 위한 검증
 
@@ -370,30 +370,30 @@ tests/
 
 ### 문서화
 
-- [ ] T163 [P] README.md 업데이트 (실행 방법, API 엔드포인트, 예제)
-- [ ] T164 [P] API 사용 가이드 작성 (docs/api-guide.md)
-- [ ] T165 [P] 배포 가이드 작성 (docs/deployment.md, Podman 포함)
+- [X] T163 [P] README.md 업데이트 (실행 방법, API 엔드포인트, 예제)
+- [X] T164 [P] API 사용 가이드 작성 (docs/api-guide.md)
+- [X] T165 [P] 배포 가이드 작성 (docs/deployment.md, Podman 포함)
 - [ ] T166 [P] quickstart.md 검증 실행 (처음부터 끝까지 테스트)
 
 ### 코드 품질
 
 - [ ] T167 코드 리뷰 및 리팩토링 (중복 제거, 명명 규칙 통일)
 - [ ] T168 [P] XML 문서 주석 추가 (공개 API, 복잡한 로직에 한국어 주석)
-- [ ] T169 [P] EditorConfig 파일 생성 (.NET 코딩 스타일)
+- [X] T169 [P] EditorConfig 파일 생성 (.NET 코딩 스타일)
 - [ ] T170 [P] 단위 테스트 커버리지 확인 (최소 80% 목표)
 
 ### 보안
 
 - [ ] T171 User Secrets 사용 가이드 작성 (로컬 개발용)
-- [ ] T172 [P] 환경 변수로 민감 정보 주입 방법 문서화 (프로덕션용)
+- [X] T172 [P] 환경 변수로 민감 정보 주입 방법 문서화 (프로덕션용)
 - [ ] T173 SQL Injection 방지 검증 (EF Core 파라미터화 쿼리 사용)
-- [ ] T174 [P] HTTPS 강제 적용 설정 (프로덕션 환경)
+- [X] T174 [P] HTTPS 강제 적용 설정 (프로덕션 환경)
 
 ### 성능 및 모니터링
 
 - [ ] T175 [P] Application Insights 또는 Prometheus 메트릭 추가 (선택)
 - [ ] T176 데이터베이스 인덱스 효율성 검증 (EXPLAIN ANALYZE)
-- [ ] T177 [P] Serilog 구조화된 로깅 검증 (JSON 형식, 필요한 필드 포함)
+- [X] T177 [P] Serilog 구조화된 로깅 검증 (JSON 형식, 필요한 필드 포함)
 - [ ] T178 메모리 및 CPU 사용량 프로파일링
 
 ### 컨테이너화 및 배포
@@ -408,7 +408,7 @@ tests/
 - [ ] T183 전체 통합 테스트 스위트 실행 (dotnet test)
 - [ ] T184 Swagger UI에서 모든 엔드포인트 수동 테스트
 - [ ] T185 OpenAPI 스키마 검증 (Spectral 또는 Swagger Editor)
-- [ ] T186 프로덕션 환경 설정 검토 (appsettings.Production.json)
+- [X] T186 프로덕션 환경 설정 검토 (appsettings.Production.json)
 - [ ] T187 [P] 장애 시나리오 테스트 (데이터베이스 다운, 외부 API 다운)
 - [ ] T188 quickstart.md 가이드대로 처음부터 설치 후 동작 확인
 

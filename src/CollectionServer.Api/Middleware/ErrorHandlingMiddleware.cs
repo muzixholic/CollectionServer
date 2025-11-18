@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using CollectionServer.Core.Exceptions;
+using CollectionServer.Api.Models;
 
 namespace CollectionServer.Api.Middleware;
 
@@ -42,18 +43,18 @@ public class ErrorHandlingMiddleware
             case InvalidBarcodeException invalidBarcodeEx:
                 statusCode = HttpStatusCode.BadRequest;
                 message = "잘못된 바코드 형식입니다.";
-                details = invalidBarcodeEx.Message;
+                details = $"{invalidBarcodeEx.Message} 올바른 형식: ISBN-10 (10자리), ISBN-13 (13자리), UPC (12자리), EAN-13 (13자리)";
                 break;
 
             case NotFoundException notFoundEx:
                 statusCode = HttpStatusCode.NotFound;
-                message = "리소스를 찾을 수 없습니다.";
+                message = "미디어 정보를 찾을 수 없습니다.";
                 details = notFoundEx.Message;
                 break;
 
             case RateLimitExceededException rateLimitEx:
                 statusCode = HttpStatusCode.TooManyRequests;
-                message = "요청 제한을 초과했습니다.";
+                message = "요청 제한을 초과했습니다. 잠시 후 다시 시도해주세요.";
                 details = rateLimitEx.Message;
                 context.Response.Headers.Append("Retry-After", rateLimitEx.RetryAfterSeconds.ToString());
                 break;
@@ -62,11 +63,12 @@ public class ErrorHandlingMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
 
-        var response = new
+        var response = new ErrorResponse
         {
-            status = (int)statusCode,
-            message,
-            details
+            StatusCode = (int)statusCode,
+            Message = message,
+            Details = details,
+            TraceId = context.TraceIdentifier
         };
 
         var json = JsonSerializer.Serialize(response, new JsonSerializerOptions

@@ -29,7 +29,11 @@ public static class ServiceCollectionExtensions
             {
                 npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
                 npgsqlOptions.CommandTimeout(30);
+                npgsqlOptions.MaxBatchSize(100);
             });
+            
+            // 성능 최적화: 쿼리 캐싱 및 연결 풀링
+            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         });
 
         services.AddScoped<IMediaRepository, MediaRepository>();
