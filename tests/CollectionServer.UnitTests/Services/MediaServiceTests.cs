@@ -3,6 +3,7 @@ using CollectionServer.Core.Enums;
 using CollectionServer.Core.Exceptions;
 using CollectionServer.Core.Interfaces;
 using CollectionServer.Core.Services;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -16,13 +17,16 @@ public class MediaServiceTests
 {
     private readonly Mock<IMediaRepository> _mockRepository;
     private readonly Mock<BarcodeValidator> _mockValidator;
+    private readonly Mock<ILogger<MediaService>> _mockLogger;
     private readonly MediaService _service;
 
     public MediaServiceTests()
     {
         _mockRepository = new Mock<IMediaRepository>();
         _mockValidator = new Mock<BarcodeValidator>();
-        _service = new MediaService(_mockRepository.Object, _mockValidator.Object);
+        _mockLogger = new Mock<ILogger<MediaService>>();
+        var emptyProviders = new List<IMediaProvider>();
+        _service = new MediaService(_mockRepository.Object, _mockValidator.Object, emptyProviders, _mockLogger.Object);
     }
 
     [Fact]

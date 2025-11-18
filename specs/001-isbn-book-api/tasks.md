@@ -167,7 +167,7 @@ tests/
 
 ### 사용자 스토리 2를 위한 단위 테스트
 
-- [ ] T071 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/GoogleBooksProviderTests.cs 생성 (Mock HTTP 응답)
+- [X] T071 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/GoogleBooksProviderTests.cs 생성 (Mock HTTP 응답)
 - [ ] T072 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/KakaoBookProviderTests.cs 생성
 - [ ] T073 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/AladinApiProviderTests.cs 생성
 - [ ] T074 [P] [US2] tests/CollectionServer.UnitTests/ExternalApis/TMDbProviderTests.cs 생성
@@ -182,23 +182,23 @@ tests/
 
 ### 사용자 스토리 2를 위한 외부 API Provider 구현
 
-- [ ] T080 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/GoogleBooksProvider.cs 구현 (IMediaProvider)
-- [ ] T081 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/KakaoBookProvider.cs 구현
-- [ ] T082 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/AladinApiProvider.cs 구현
-- [ ] T083 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/TMDbProvider.cs 구현
-- [ ] T084 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/OMDbProvider.cs 구현
-- [ ] T085 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Music/MusicBrainzProvider.cs 구현
-- [ ] T086 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Music/DiscogsProvider.cs 구현
+- [X] T080 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/GoogleBooksProvider.cs 구현 (IMediaProvider)
+- [X] T081 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/KakaoBookProvider.cs 구현
+- [X] T082 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Books/AladinApiProvider.cs 구현
+- [X] T083 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/TMDbProvider.cs 구현
+- [X] T084 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Movies/OMDbProvider.cs 구현
+- [X] T085 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Music/MusicBrainzProvider.cs 구현
+- [X] T086 [P] [US2] src/CollectionServer.Infrastructure/ExternalApis/Music/DiscogsProvider.cs 구현
 
 ### 사용자 스토리 2를 위한 서비스 통합
 
-- [ ] T087 [US2] Program.cs에 HttpClientFactory 구성 추가 (각 Provider별 BaseAddress, Timeout 설정)
-- [ ] T088 [US2] Program.cs에 모든 IMediaProvider 구현체 DI 등록 (우선순위 포함)
-- [ ] T089 [US2] ExternalApiSettings에 API 키, Base URL, Priority 설정 추가 (appsettings.json)
-- [ ] T090 [US2] MediaService에 외부 API 우선순위 폴백 로직 추가 (OrderBy Priority)
-- [ ] T091 [US2] MediaService에 외부 API 결과를 데이터베이스에 저장하는 로직 추가
-- [ ] T092 [US2] 외부 API 호출 실패 시 로깅 추가 (Serilog Warning)
-- [ ] T093 [US2] 모든 외부 API 실패 시 404 Not Found 반환 로직 구현
+- [X] T087 [US2] Program.cs에 HttpClientFactory 구성 추가 (각 Provider별 BaseAddress, Timeout 설정)
+- [X] T088 [US2] Program.cs에 모든 IMediaProvider 구현체 DI 등록 (우선순위 포함)
+- [X] T089 [US2] ExternalApiSettings에 API 키, Base URL, Priority 설정 추가 (appsettings.json)
+- [X] T090 [US2] MediaService에 외부 API 우선순위 폴백 로직 추가 (OrderBy Priority)
+- [X] T091 [US2] MediaService에 외부 API 결과를 데이터베이스에 저장하는 로직 추가
+- [X] T092 [US2] 외부 API 호출 실패 시 로깅 추가 (Serilog Warning)
+- [X] T093 [US2] 모든 외부 API 실패 시 404 Not Found 반환 로직 구현
 
 ### 사용자 스토리 2를 위한 검증
 

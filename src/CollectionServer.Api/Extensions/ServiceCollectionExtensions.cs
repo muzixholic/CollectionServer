@@ -1,6 +1,9 @@
 using CollectionServer.Core.Interfaces;
 using CollectionServer.Core.Services;
 using CollectionServer.Infrastructure.Data;
+using CollectionServer.Infrastructure.ExternalApis.Books;
+using CollectionServer.Infrastructure.ExternalApis.Movies;
+using CollectionServer.Infrastructure.ExternalApis.Music;
 using CollectionServer.Infrastructure.Options;
 using CollectionServer.Infrastructure.Repositories;
 using Microsoft.AspNetCore.RateLimiting;
@@ -37,11 +40,28 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 외부 API 설정 등록
+    /// 외부 API 설정 및 제공자 등록
     /// </summary>
     public static IServiceCollection AddExternalApiSettings(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ExternalApiSettings>(configuration.GetSection("ExternalApis"));
+
+        // HttpClient factory 구성
+        services.AddHttpClient();
+
+        // Book providers
+        services.AddScoped<IMediaProvider, GoogleBooksProvider>();
+        services.AddScoped<IMediaProvider, KakaoBookProvider>();
+        services.AddScoped<IMediaProvider, AladinApiProvider>();
+
+        // Movie providers
+        services.AddScoped<IMediaProvider, TMDbProvider>();
+        services.AddScoped<IMediaProvider, OMDbProvider>();
+
+        // Music providers
+        services.AddScoped<IMediaProvider, MusicBrainzProvider>();
+        services.AddScoped<IMediaProvider, DiscogsProvider>();
+
         return services;
     }
 
