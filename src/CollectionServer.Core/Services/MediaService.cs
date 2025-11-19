@@ -48,11 +48,21 @@ public class MediaService : IMediaService
 
         // 3. 외부 API 우선순위 기반 폴백
         _logger.LogInformation("Media item not found in database, trying external providers for barcode: {Barcode}", barcode);
+        
+        _logger.LogInformation("Total providers registered: {Count}", _providers.Count());
 
         var supportedProviders = _providers
-            .Where(p => p.SupportsBarcode(barcode))
+            .Where(p => {
+                var supports = p.SupportsBarcode(barcode);
+                _logger.LogInformation("Provider {Name} supports barcode {Barcode}: {Supports}", 
+                    p.ProviderName, barcode, supports);
+                return supports;
+            })
             .OrderBy(p => p.Priority)
             .ToList();
+
+        _logger.LogInformation("Found {Count} supported providers for barcode: {Barcode}", 
+            supportedProviders.Count, barcode);
 
         if (supportedProviders.Count == 0)
         {
