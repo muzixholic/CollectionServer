@@ -50,7 +50,7 @@ public class MusicBrainzProvider : IMediaProvider
 
             _logger.LogInformation("Querying MusicBrainz API for barcode: {Barcode}", barcode);
 
-            var url = $"/release?query=barcode:{barcode}&fmt=json";
+            var url = $"/ws/2/release/?query=barcode:{barcode}&fmt=json";
             
             var response = await httpClient.GetAsync(url, cancellationToken);
             if (!response.IsSuccessStatusCode)
@@ -76,7 +76,7 @@ public class MusicBrainzProvider : IMediaProvider
             var release = result.Releases[0];
             
             // Get full release details
-            var detailsUrl = $"/release/{release.Id}?inc=artists+recordings&fmt=json";
+            var detailsUrl = $"/ws/2/release/{release.Id}?inc=artists+recordings&fmt=json";
             var detailsResponse = await httpClient.GetAsync(detailsUrl, cancellationToken);
             
             if (!detailsResponse.IsSuccessStatusCode)
