@@ -2,6 +2,7 @@ using CollectionServer.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CollectionServer.IntegrationTests.Fixtures;
@@ -9,11 +10,18 @@ namespace CollectionServer.IntegrationTests.Fixtures;
 /// <summary>
 /// 통합 테스트용 WebApplicationFactory
 /// In-Memory 데이터베이스를 사용하여 실제 HTTP 요청을 테스트
+/// User Secrets에서 API 키를 로드하여 외부 API 통합 테스트 수행
 /// </summary>
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            // User Secrets 추가 (API 키)
+            config.AddUserSecrets<Program>();
+        });
+
         builder.ConfigureServices(services =>
         {
             // 기존 DbContext 등록 제거
@@ -40,7 +48,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             db.Database.EnsureCreated();
         });
 
-        builder.UseEnvironment("Testing");
+        builder.UseEnvironment("Development");
     }
 
     /// <summary>
