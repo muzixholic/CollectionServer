@@ -1,4 +1,5 @@
 using CollectionServer.Core.Entities;
+using CollectionServer.Core.Enums;
 using CollectionServer.Core.Interfaces;
 using CollectionServer.Infrastructure.Options;
 using Microsoft.Extensions.Logging;
@@ -6,9 +7,6 @@ using Microsoft.Extensions.Options;
 
 namespace CollectionServer.Infrastructure.ExternalApis.Music;
 
-/// <summary>
-/// Discogs API 제공자
-/// </summary>
 public class DiscogsProvider : IMediaProvider
 {
     private readonly IHttpClientFactory _httpClientFactory;
@@ -31,15 +29,21 @@ public class DiscogsProvider : IMediaProvider
     public bool SupportsBarcode(string barcode)
     {
         var cleaned = barcode.Replace("-", "").Replace(" ", "");
-        if (cleaned.Length == 12) return true;
-        if (cleaned.Length == 13 && !cleaned.StartsWith("978") && !cleaned.StartsWith("979")) return true;
+        
+        // UPC: 12 digits, not starting with 978/979
+        if (cleaned.Length == 12 && !cleaned.StartsWith("978") && !cleaned.StartsWith("979")) 
+            return true;
+        
+        // EAN-13: 13 digits, not ISBN
+        if (cleaned.Length == 13 && !cleaned.StartsWith("978") && !cleaned.StartsWith("979")) 
+            return true;
+        
         return false;
     }
 
     public async Task<MediaItem?> GetMediaByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)
     {
-        // TODO: Implement Discogs API integration
-        _logger.LogInformation("DiscogsProvider - Querying for barcode: {Barcode}", barcode);
+        _logger.LogInformation("Discogs Provider - barcode search not yet implemented: {Barcode}", barcode);
         await Task.CompletedTask;
         return null;
     }

@@ -30,10 +30,9 @@ public class OMDbProvider : IMediaProvider
 
     public bool SupportsBarcode(string barcode)
     {
+        // OMDb: UPC only (12 digits), not ISBN
         var cleaned = barcode.Replace("-", "").Replace(" ", "");
-        if (cleaned.Length == 12) return true;
-        if (cleaned.Length == 13 && !cleaned.StartsWith("978") && !cleaned.StartsWith("979")) return true;
-        return false;
+        return cleaned.Length == 12 && cleaned.All(char.IsDigit);
     }
 
     public async Task<MediaItem?> GetMediaByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)

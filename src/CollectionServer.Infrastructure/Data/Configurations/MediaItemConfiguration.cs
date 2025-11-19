@@ -1,11 +1,12 @@
 using CollectionServer.Core.Entities;
+using CollectionServer.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CollectionServer.Infrastructure.Data.Configurations;
 
 /// <summary>
-/// MediaItem 엔티티 구성 (TPT 전략)
+/// MediaItem 엔티티 구성 (TPH 전략)
 /// </summary>
 public class MediaItemConfiguration : IEntityTypeConfiguration<MediaItem>
 {
@@ -46,10 +47,11 @@ public class MediaItemConfiguration : IEntityTypeConfiguration<MediaItem>
         builder.Property(m => m.UpdatedAt)
             .IsRequired();
 
-        // TPH (Table Per Hierarchy) 상속 전략으로 변경 (EF Core 10 호환)
-        builder.HasDiscriminator<string>("MediaType")
-            .HasValue<Book>("Book")
-            .HasValue<Movie>("Movie")
-            .HasValue<MusicAlbum>("MusicAlbum");
+        // TPH (Table Per Hierarchy) 상속 전략
+        // MediaType enum을 Discriminator로 사용
+        builder.HasDiscriminator(m => m.MediaType)
+            .HasValue<Book>(MediaType.Book)
+            .HasValue<Movie>(MediaType.Movie)
+            .HasValue<MusicAlbum>(MediaType.MusicAlbum);
     }
 }

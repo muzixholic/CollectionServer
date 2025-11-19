@@ -28,9 +28,12 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - IN_CONTAINER=true
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=collectionserver;Username=collectionserver;Password=collectionserver_dev
+      - ExternalApis__KakaoBook__ApiKey=f661a532addc0622d536fb30f4c74022
     ports:
-      - "5000:8080"
+      - "5283:8080"
     depends_on:
       postgres:
         condition: service_healthy

@@ -33,6 +33,7 @@ else
     builder.Services.AddDatabaseServices(builder.Configuration);
 }
 
+// 외부 API 설정 및 Provider 등록 (모든 환경에서 필요)
 builder.Services.AddExternalApiSettings(builder.Configuration);
 builder.Services.AddRateLimitingServices();
 

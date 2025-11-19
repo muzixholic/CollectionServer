@@ -31,9 +31,8 @@ public class OMDbProviderTests
     }
 
     [Theory]
-    [InlineData("123456789012")]
-    [InlineData("1234567890123")]
-    public void SupportsBarcode_ValidUPCOrEAN_ReturnsTrue(string barcode)
+    [InlineData("123456789012")] // UPC-A (12 digits)
+    public void SupportsBarcode_ValidUPC_ReturnsTrue(string barcode)
     {
         var provider = new OMDbProvider(_httpClientFactoryMock.Object, _settings, _loggerMock.Object);
         var result = provider.SupportsBarcode(barcode);
@@ -41,8 +40,10 @@ public class OMDbProviderTests
     }
 
     [Theory]
-    [InlineData("12345")]
-    [InlineData("978123456789")]
+    [InlineData("12345")] // Too short
+    [InlineData("9781234567897")] // ISBN-13 (13 digits starting with 978)
+    [InlineData("9791234567894")] // ISBN-13 (13 digits starting with 979)
+    [InlineData("1234567890123")] // 13 digits - OMDb doesn't support EAN-13
     [InlineData("")]
     public void SupportsBarcode_InvalidBarcode_ReturnsFalse(string barcode)
     {

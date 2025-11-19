@@ -40,8 +40,9 @@ public class MusicBrainzProviderTests
     }
 
     [Theory]
-    [InlineData("12345")]
-    [InlineData("978123456789")]
+    [InlineData("12345")] // Too short
+    [InlineData("9781234567897")] // ISBN-13 (13 digits starting with 978)
+    [InlineData("9791234567894")] // ISBN-13 (13 digits starting with 979)
     [InlineData("")]
     public void SupportsBarcode_InvalidBarcode_ReturnsFalse(string barcode)
     {
