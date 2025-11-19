@@ -16,17 +16,17 @@ namespace CollectionServer.UnitTests.Services;
 public class MediaServiceTests
 {
     private readonly Mock<IMediaRepository> _mockRepository;
-    private readonly Mock<BarcodeValidator> _mockValidator;
+    private readonly BarcodeValidator _validator;
     private readonly Mock<ILogger<MediaService>> _mockLogger;
     private readonly MediaService _service;
 
     public MediaServiceTests()
     {
         _mockRepository = new Mock<IMediaRepository>();
-        _mockValidator = new Mock<BarcodeValidator>();
+        _validator = new BarcodeValidator();
         _mockLogger = new Mock<ILogger<MediaService>>();
         var emptyProviders = new List<IMediaProvider>();
-        _service = new MediaService(_mockRepository.Object, _mockValidator.Object, emptyProviders, _mockLogger.Object);
+        _service = new MediaService(_mockRepository.Object, _validator, emptyProviders, _mockLogger.Object);
     }
 
     [Fact]
@@ -42,10 +42,6 @@ public class MediaServiceTests
             MediaType = MediaType.Book
         };
 
-        _mockValidator
-            .Setup(v => v.Validate(barcode))
-            .Returns(BarcodeType.ISBN13);
-
         _mockRepository
             .Setup(r => r.GetByBarcodeAsync(barcode, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedBook);
@@ -57,7 +53,6 @@ public class MediaServiceTests
         Assert.NotNull(result);
         Assert.Equal(barcode, result.Barcode);
         Assert.Equal("테스트 도서", result.Title);
-        _mockValidator.Verify(v => v.Validate(barcode), Times.Once);
         _mockRepository.Verify(r => r.GetByBarcodeAsync(barcode, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -66,10 +61,6 @@ public class MediaServiceTests
     {
         // Arrange
         var barcode = "9780000000002";
-
-        _mockValidator
-            .Setup(v => v.Validate(barcode))
-            .Returns(BarcodeType.ISBN13);
 
         _mockRepository
             .Setup(r => r.GetByBarcodeAsync(barcode, It.IsAny<CancellationToken>()))
@@ -86,10 +77,6 @@ public class MediaServiceTests
         // Arrange
         var invalidBarcode = "invalid123";
 
-        _mockValidator
-            .Setup(v => v.Validate(invalidBarcode))
-            .Throws(new InvalidBarcodeException("유효하지 않은 바코드 형식입니다."));
-
         // Act & Assert
         await Assert.ThrowsAsync<InvalidBarcodeException>(() => 
             _service.GetMediaByBarcodeAsync(invalidBarcode));
@@ -101,10 +88,6 @@ public class MediaServiceTests
         // Arrange
         var emptyBarcode = "";
 
-        _mockValidator
-            .Setup(v => v.Validate(emptyBarcode))
-            .Throws(new InvalidBarcodeException("바코드가 비어있습니다."));
-
         // Act & Assert
         await Assert.ThrowsAsync<InvalidBarcodeException>(() => 
             _service.GetMediaByBarcodeAsync(emptyBarcode));
@@ -115,10 +98,6 @@ public class MediaServiceTests
     {
         // Arrange
         var barcode = "9788966262281";
-
-        _mockValidator
-            .Setup(v => v.Validate(barcode))
-            .Returns(BarcodeType.ISBN13);
 
         _mockRepository
             .Setup(r => r.GetByBarcodeAsync(barcode, It.IsAny<CancellationToken>()))
@@ -144,10 +123,6 @@ public class MediaServiceTests
             MediaType = MediaType.Book
         };
 
-        _mockValidator
-            .Setup(v => v.Validate(barcode))
-            .Returns(BarcodeType.ISBN13);
-
         _mockRepository
             .Setup(r => r.GetByBarcodeAsync(barcode, It.IsAny<CancellationToken>()))
             .ReturnsAsync(mediaItem);
@@ -167,10 +142,6 @@ public class MediaServiceTests
         var barcode = "9788966262281";
         var cts = new CancellationTokenSource();
         var token = cts.Token;
-
-        _mockValidator
-            .Setup(v => v.Validate(barcode))
-            .Returns(BarcodeType.ISBN13);
 
         _mockRepository
             .Setup(r => r.GetByBarcodeAsync(barcode, token))
@@ -196,10 +167,6 @@ public class MediaServiceTests
             MediaType = MediaType.Movie
         };
 
-        _mockValidator
-            .Setup(v => v.Validate(barcode))
-            .Returns(BarcodeType.UPC);
-
         _mockRepository
             .Setup(r => r.GetByBarcodeAsync(barcode, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedMovie);
@@ -217,7 +184,7 @@ public class MediaServiceTests
     public async Task GetMediaByBarcodeAsync_MusicAlbum_엔티티_반환()
     {
         // Arrange
-        var barcode = "8809479210654";
+        var barcode = "8809479210659"; // 수정된 유효한 체크섬
         var expectedAlbum = new MusicAlbum
         {
             Id = Guid.NewGuid(),
@@ -225,10 +192,6 @@ public class MediaServiceTests
             Title = "테스트 앨범",
             MediaType = MediaType.MusicAlbum
         };
-
-        _mockValidator
-            .Setup(v => v.Validate(barcode))
-            .Returns(BarcodeType.EAN13);
 
         _mockRepository
             .Setup(r => r.GetByBarcodeAsync(barcode, It.IsAny<CancellationToken>()))

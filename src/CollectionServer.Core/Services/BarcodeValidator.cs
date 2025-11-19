@@ -97,7 +97,7 @@ public class BarcodeValidator
                 evenSum += digit;
         }
 
-        int checksum = (10 - ((oddSum + evenSum * 3) % 10)) % 10;
+        int checksum = (10 - ((oddSum * 1 + evenSum * 3) % 10)) % 10;
         int actualCheck = code[12] - '0';
 
         if (checksum != actualCheck)

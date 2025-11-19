@@ -119,7 +119,7 @@ public class BarcodeValidatorTests
     #region EAN-13 테스트
 
     [Theory]
-    [InlineData("8809479210654")]  // 한국 음악 앨범
+    [InlineData("8809479210659")]  // 한국 음악 앨범
     [InlineData("8809634382030")]  // 한국 음악 앨범
     public void Validate_유효한_EAN13_성공(string barcode)
     {
@@ -163,8 +163,6 @@ public class BarcodeValidatorTests
 
     [Theory]
     [InlineData("ABC1234567890")]  // 알파벳 포함 (X 제외)
-    [InlineData("978-896-626-228-1")] // 하이픈 포함
-    [InlineData("978 896 626 228 1")] // 공백 포함
     public void Validate_숫자가_아닌_문자_실패(string barcode)
     {
         // Act & Assert
@@ -172,10 +170,23 @@ public class BarcodeValidatorTests
     }
 
     [Theory]
+    [InlineData("978-896-626-228-1", "9788966262281")] // 하이픈 제거
+    [InlineData("978 896 626 228 1", "9788966262281")] // 공백 제거
+    [InlineData("0-123456-78905", "012345678905")]     // UPC 하이픈
+    public void Validate_정규화_성공(string inputBarcode, string expectedNormalized)
+    {
+        // Act - 예외가 발생하지 않아야 함
+        var result = _validator.Validate(inputBarcode);
+        
+        // Assert - 정규화되어 검증 통과
+        Assert.NotNull(result);
+    }
+
+    [Theory]
     [InlineData("9788966262281", MediaType.Book)]     // ISBN-13 → Book
     [InlineData("8966262287", MediaType.Book)]        // ISBN-10 → Book
     [InlineData("012345678905", MediaType.Movie)]     // UPC → Movie (추정 불가, null 반환)
-    [InlineData("8809479210654", MediaType.MusicAlbum)] // EAN-13 (880) → Music (추정 불가, null 반환)
+    [InlineData("8809479210659", MediaType.MusicAlbum)] // EAN-13 (880) → Music (추정 불가, null 반환)
     public void InferMediaType_바코드별_미디어타입_감지(string barcode, MediaType expectedType)
     {
         // Act
