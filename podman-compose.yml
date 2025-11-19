@@ -25,15 +25,14 @@ services:
       context: .
       dockerfile: Containerfile
     container_name: collectionserver-api
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - DOTNET_RUNNING_IN_CONTAINER=true
       - IN_CONTAINER=true
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=collectionserver;Username=collectionserver;Password=collectionserver_dev
-      - ExternalApis__GoogleBooks__ApiKey=AIzaSyCEMeUgeqh6E_JXK7QTvIdO41CpzRhukWA
-      - ExternalApis__KakaoBook__ApiKey=f661a532addc0622d536fb30f4c74022
-      - ExternalApis__AladinApi__ApiKey=ttbchm16101614002
     ports:
       - "5283:8080"
     depends_on:
