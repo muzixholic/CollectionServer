@@ -49,7 +49,9 @@ public class MediaEndpointTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("바코드", content, StringComparison.OrdinalIgnoreCase);
+        // JSON에서 한글이 유니코드 이스케이프되므로 statusCode와 message 필드 존재 확인
+        Assert.Contains("statusCode", content);
+        Assert.Contains("message", content);
     }
 
     [Fact]

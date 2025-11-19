@@ -49,8 +49,8 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS (개발 환경)
-if (builder.Environment.IsDevelopment())
+// CORS (개발 및 테스트 환경)
+if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddCors(options =>
     {
