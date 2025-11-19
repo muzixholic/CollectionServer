@@ -19,8 +19,11 @@ public class BarcodeValidator
             throw new InvalidBarcodeException(barcode, "바코드가 비어 있습니다.");
         }
 
-        // 숫자만 추출
-        var cleaned = new string(barcode.Where(char.IsDigit).ToArray());
+        // 숫자와 X만 추출 (공백, 하이픈 제거)
+        var cleaned = new string(barcode.Where(c => char.IsDigit(c) || c == 'X' || c == 'x').ToArray());
+        
+        // 소문자 x를 대문자 X로 변환
+        cleaned = cleaned.Replace('x', 'X');
 
         return cleaned.Length switch
         {

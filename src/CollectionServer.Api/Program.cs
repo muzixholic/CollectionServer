@@ -17,8 +17,8 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // 서비스 등록
-// 개발 환경에서는 InMemory DB 사용 (EF Core 10 + Npgsql preview 호환성 문제 회피)
-if (builder.Environment.IsDevelopment())
+// 개발/테스트 환경에서는 InMemory DB 사용 (EF Core 10 + Npgsql preview 호환성 문제 회피)
+if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddDbContext<CollectionServer.Infrastructure.Data.ApplicationDbContext>(options =>
         options.UseInMemoryDatabase("CollectionServerDev"));
@@ -68,7 +68,7 @@ var app = builder.Build();
 // 미들웨어 파이프라인
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();

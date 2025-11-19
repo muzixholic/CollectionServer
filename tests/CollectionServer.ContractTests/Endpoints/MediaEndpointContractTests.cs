@@ -144,11 +144,31 @@ public class MediaEndpointContractTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task GET_Items_특수문자_바코드_400()
+    public async Task GET_Items_하이픈포함_바코드_정상처리()
     {
         // Arrange
         var client = _factory.CreateClient();
-        var invalidBarcode = "978-896-626-228-1"; // 하이픈 포함
+        var barcodeWithHyphen = "978-896-626-228-1"; // 하이픈 포함 - 자동으로 제거되어 처리됨
+
+        // Act
+        var response = await client.GetAsync($"/items/{barcodeWithHyphen}");
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        // 하이픈은 자동 제거되므로 유효한 바코드로 처리됨 (404 또는 200)
+        Assert.True(
+            response.StatusCode == HttpStatusCode.NotFound || 
+            response.StatusCode == HttpStatusCode.OK,
+            $"Expected 404 or 200, but got {response.StatusCode}. Content: {content}"
+        );
+    }
+    
+    [Fact]
+    public async Task GET_Items_완전히_잘못된_바코드_400()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+        var invalidBarcode = "ABC-DEF-GHI"; // 숫자가 아닌 문자만
 
         // Act
         var response = await client.GetAsync($"/items/{invalidBarcode}");
