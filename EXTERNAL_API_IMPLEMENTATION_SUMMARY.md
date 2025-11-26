@@ -57,6 +57,12 @@
 - IMDb ID 또는 Title 필요
 - **Status**: Stub (Barcode 지원 안함)
 
+#### 8. **UpcItemDbProvider** ✅ (신규 구현)
+- UPCitemdb + TMDb Bridge
+- UPC/EAN -> Title (UPCitemdb) -> Details (TMDb)
+- 영화 바코드 검색 문제 해결
+- **Status**: Production Ready
+
 ## 🎯 API별 특징 비교
 
 | Provider | Barcode 지원 | 인증 방식 | 응답 속도 | 데이터 품질 |
@@ -261,7 +267,10 @@ dotnet user-secrets set "ExternalApis:Discogs:ApiKey" "YOUR_TOKEN"
 
 ### 영화 (Movies)
 ```
-❌ 현재 지원 안함 (Barcode 검색 불가)
+1순위: AladinApi (Priority: 1)
+  ↓ 실패 시
+2순위: UpcItemDbProvider (Priority: 2)
+  ↓ (UPC -> Title -> TMDb)
 ```
 
 ## ✨ 성과

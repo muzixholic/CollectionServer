@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
         // Movie providers
         services.AddScoped<IMediaProvider, TMDbProvider>();
         services.AddScoped<IMediaProvider, OMDbProvider>();
+        services.AddScoped<IMediaProvider, UpcItemDbProvider>();
 
         // Music providers
         services.AddScoped<IMediaProvider, MusicBrainzProvider>();

@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.Json;
+using CollectionServer.Core.Interfaces;
 using CollectionServer.IntegrationTests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace CollectionServer.IntegrationTests.ApiTests;
@@ -50,8 +53,9 @@ public class MediaEndpointTests : IClassFixture<TestWebApplicationFactory>
         
         var content = await response.Content.ReadAsStringAsync();
         // JSON에서 한글이 유니코드 이스케이프되므로 statusCode와 message 필드 존재 확인
-        Assert.Contains("statusCode", content);
-        Assert.Contains("message", content);
+        // ProblemDetails: status, title, detail
+        Assert.Contains("status", content);
+        Assert.Contains("title", content);
     }
 
     [Fact]
@@ -59,9 +63,28 @@ public class MediaEndpointTests : IClassFixture<TestWebApplicationFactory>
     {
         // Arrange
         var validButNonExistentBarcode = "9780000000002";
+        
+        // Mock providers to ensure 404
+        var client = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                var descriptors = services.Where(d => d.ServiceType == typeof(IMediaProvider)).ToList();
+                foreach (var d in descriptors) services.Remove(d);
+                
+                var mockProvider = new Mock<IMediaProvider>();
+                mockProvider.Setup(p => p.ProviderName).Returns("MockProvider");
+                mockProvider.Setup(p => p.Priority).Returns(1);
+                mockProvider.Setup(p => p.SupportsBarcode(It.IsAny<string>())).Returns(true);
+                mockProvider.Setup(p => p.GetMediaByBarcodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync((CollectionServer.Core.Entities.MediaItem?)null);
+                
+                services.AddScoped<IMediaProvider>(_ => mockProvider.Object);
+            });
+        }).CreateClient();
 
         // Act
-        var response = await _client.GetAsync($"/items/{validButNonExistentBarcode}");
+        var response = await client.GetAsync($"/items/{validButNonExistentBarcode}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

@@ -4,7 +4,16 @@ using CollectionServer.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
+using Microsoft.AspNetCore.Http.Json;
+using System.Text.Json.Serialization;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// JSON 직렬화 설정 (Enum을 문자열로 변환)
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 // Serilog 로깅 구성
 Log.Logger = new LoggerConfiguration()

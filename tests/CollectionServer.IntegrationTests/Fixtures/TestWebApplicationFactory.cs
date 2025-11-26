@@ -14,6 +14,8 @@ namespace CollectionServer.IntegrationTests.Fixtures;
 /// </summary>
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _dbName = Guid.NewGuid().ToString();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureAppConfiguration((context, config) =>
@@ -33,10 +35,10 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(descriptor);
             }
 
-            // In-Memory 데이터베이스로 교체
+            // In-Memory 데이터베이스로 교체 (테스트 클래스별 격리)
             services.AddDbContext<ApplicationDbContext>(options =>
             {
-                options.UseInMemoryDatabase("TestDb");
+                options.UseInMemoryDatabase(_dbName);
             });
 
             // 데이터베이스 초기화

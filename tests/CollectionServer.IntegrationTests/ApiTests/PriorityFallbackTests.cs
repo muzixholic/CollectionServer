@@ -1,3 +1,4 @@
+using Moq;
 using System.Net;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,7 @@ public class PriorityFallbackTests : IClassFixture<TestWebApplicationFactory>
     {
         _factory = factory;
         _client = factory.CreateClient();
+        _factory.ResetDatabase();
     }
 
     [Fact]
@@ -72,14 +74,33 @@ public class PriorityFallbackTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task GetItem_InvalidButWellFormedIsbn_ReturnsNotFoundAfterTryingAllProviders()
     {
-        // Arrange - 형식은 유효하지만 존재하지 않는 ISBN
-        var isbn = "9781234567897";  // Valid ISBN-13 checksum
+        // Arrange - 모든 Provider가 null을 반환하도록 설정
+        var client = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                // 기존 Provider 제거
+                var descriptors = services.Where(d => d.ServiceType == typeof(IMediaProvider)).ToList();
+                foreach (var d in descriptors) services.Remove(d);
+                
+                // Mock Provider 추가 (항상 null 반환)
+                var mockProvider = new Mock<IMediaProvider>();
+                mockProvider.Setup(p => p.ProviderName).Returns("MockProvider");
+                mockProvider.Setup(p => p.Priority).Returns(1);
+                mockProvider.Setup(p => p.SupportsBarcode(It.IsAny<string>())).Returns(true);
+                mockProvider.Setup(p => p.GetMediaByBarcodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync((CollectionServer.Core.Entities.MediaItem?)null);
+                
+                services.AddScoped<IMediaProvider>(_ => mockProvider.Object);
+            });
+        }).CreateClient();
+
+        var isbn = "9780000000002";
 
         // Act
-        var response = await _client.GetAsync($"/items/{isbn}");
+        var response = await client.GetAsync($"/items/{isbn}");
 
         // Assert
-        // 모든 Provider가 시도했지만 찾지 못함
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 

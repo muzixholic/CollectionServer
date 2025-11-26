@@ -1,8 +1,8 @@
 using CollectionServer.Api.Middleware;
-using CollectionServer.Api.Models;
 using CollectionServer.Core.Exceptions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Text.Json;
@@ -32,7 +32,7 @@ public class ErrorHandlingMiddlewareTests
         await middleware.InvokeAsync(_httpContext);
 
         _httpContext.Response.StatusCode.Should().Be(400);
-        _httpContext.Response.ContentType.Should().Be("application/json");
+        _httpContext.Response.ContentType.Should().Contain("application/problem+json");
     }
 
     [Fact]
@@ -97,10 +97,31 @@ public class ErrorHandlingMiddlewareTests
 
         _httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
         var responseBody = await new StreamReader(_httpContext.Response.Body).ReadToEndAsync();
-        var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(responseBody, 
+        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody, 
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        errorResponse.Should().NotBeNull();
-        errorResponse!.Message.Should().Contain("잘못된 바코드");
+        problemDetails.Should().NotBeNull();
+        problemDetails!.Title.Should().Contain("잘못된 바코드");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ExternalApiException_Returns502()
+    {
+        var middleware = new ErrorHandlingMiddleware(
+            _ => throw new ExternalApiException("TestProvider", "Connection failed"),
+            _loggerMock.Object);
+
+        await middleware.InvokeAsync(_httpContext);
+
+        _httpContext.Response.StatusCode.Should().Be(502);
+        
+        _httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
+        var responseBody = await new StreamReader(_httpContext.Response.Body).ReadToEndAsync();
+        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody, 
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            
+        problemDetails.Should().NotBeNull();
+        problemDetails!.Title.Should().Be("외부 서비스 오류");
+        problemDetails.Detail.Should().Contain("TestProvider");
     }
 }

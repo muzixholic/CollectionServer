@@ -12,6 +12,7 @@ public class ExternalApiSettings
     public OMDbSettings OMDb { get; set; } = new();
     public MusicBrainzSettings MusicBrainz { get; set; } = new();
     public DiscogsSettings Discogs { get; set; } = new();
+    public UpcItemDbSettings UpcItemDb { get; set; } = new();
 }
 
 public class GoogleBooksSettings
@@ -67,6 +68,13 @@ public class DiscogsSettings
     public string ApiKey { get; set; } = string.Empty;
     public string ApiSecret { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = "https://api.discogs.com";
+    public int Priority { get; set; } = 2;
+    public int TimeoutSeconds { get; set; } = 10;
+}
+
+public class UpcItemDbSettings
+{
+    public string BaseUrl { get; set; } = "https://api.upcitemdb.com/prod/trial";
     public int Priority { get; set; } = 2;
     public int TimeoutSeconds { get; set; } = 10;
 }
