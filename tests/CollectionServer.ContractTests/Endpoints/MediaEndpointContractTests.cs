@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using CollectionServer.ContractTests.Fixtures;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -9,11 +10,11 @@ namespace CollectionServer.ContractTests.Endpoints;
 /// 미디어 엔드포인트 계약 테스트
 /// API 엔드포인트의 응답 형식, 상태 코드, 헤더 등이 계약을 준수하는지 검증
 /// </summary>
-public class MediaEndpointContractTests : IClassFixture<WebApplicationFactory<Program>>
+public class MediaEndpointContractTests : IClassFixture<ContractTestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly ContractTestWebApplicationFactory _factory;
 
-    public MediaEndpointContractTests(WebApplicationFactory<Program> factory)
+    public MediaEndpointContractTests(ContractTestWebApplicationFactory factory)
     {
         _factory = factory;
     }

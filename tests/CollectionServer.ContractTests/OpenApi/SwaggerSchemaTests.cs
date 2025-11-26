@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using CollectionServer.ContractTests.Fixtures;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -9,11 +10,11 @@ namespace CollectionServer.ContractTests.OpenApi;
 /// OpenAPI 스키마 검증 테스트
 /// OpenAPI/Swagger 문서가 올바르게 생성되고 접근 가능한지 확인
 /// </summary>
-public class SwaggerSchemaTests : IClassFixture<WebApplicationFactory<Program>>
+public class SwaggerSchemaTests : IClassFixture<ContractTestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly ContractTestWebApplicationFactory _factory;
 
-    public SwaggerSchemaTests(WebApplicationFactory<Program> factory)
+    public SwaggerSchemaTests(ContractTestWebApplicationFactory factory)
     {
         _factory = factory;
     }
