@@ -48,6 +48,23 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             // FakeCacheService 등록
             services.AddSingleton<ICacheService, FakeCacheService>();
 
+            // Mock HttpMessageHandler 등록
+            services.AddTransient<MockHttpMessageHandler>();
+
+            // 모든 외부 API Client가 MockHandler를 사용하도록 설정
+            var providerNames = new[] 
+            { 
+                "GoogleBooks", "KakaoBook", "AladinApi", 
+                "TMDb", "OMDb", "UpcItemDb", 
+                "MusicBrainz", "Discogs" 
+            };
+
+            foreach (var name in providerNames)
+            {
+                services.AddHttpClient(name)
+                    .ConfigurePrimaryHttpMessageHandler<MockHttpMessageHandler>();
+            }
+
             // In-Memory 데이터베이스로 교체 (테스트 클래스별 격리)
             services.AddDbContext<ApplicationDbContext>(options =>
             {
