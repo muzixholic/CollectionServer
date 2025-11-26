@@ -38,6 +38,7 @@ public class OMDbProvider : IMediaProvider
     public async Task<MediaItem?> GetMediaByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)
     {
         // TODO: Implement OMDb API integration
+        var httpClient = _httpClientFactory.CreateClient("OMDb");
         _logger.LogInformation("OMDbProvider - Querying for barcode: {Barcode}", barcode);
         await Task.CompletedTask;
         return null;

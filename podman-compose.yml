@@ -20,6 +20,15 @@ services:
     networks:
       - collectionserver-network
 
+  garnet:
+    image: ghcr.io/microsoft/garnet:latest
+    container_name: collectionserver-garnet
+    ports:
+      - "6379:6379"
+    networks:
+      - collectionserver-network
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -33,11 +42,14 @@ services:
       - DOTNET_RUNNING_IN_CONTAINER=true
       - IN_CONTAINER=true
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=collectionserver;Username=collectionserver;Password=collectionserver_dev
+      - ConnectionStrings__CacheConnection=garnet:6379
     ports:
       - "5283:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      garnet:
+        condition: service_started
     networks:
       - collectionserver-network
     restart: unless-stopped

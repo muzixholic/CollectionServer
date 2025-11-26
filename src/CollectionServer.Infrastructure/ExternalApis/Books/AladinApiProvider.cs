@@ -45,7 +45,7 @@ public class AladinApiProvider : IMediaProvider
     {
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient("AladinApi");
             httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 
             _logger.LogInformation("Querying Aladin API for barcode: {Barcode}", barcode);

@@ -39,7 +39,7 @@ public class KakaoBookProvider : IMediaProvider
     {
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient("KakaoBook");
             httpClient.BaseAddress = new Uri(_settings.BaseUrl);
             httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
             httpClient.DefaultRequestHeaders.Add("Authorization", $"KakaoAK {_settings.ApiKey}");

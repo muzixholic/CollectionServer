@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Reverse Proxy (Nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: collectionserver-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - api
+    networks:
+      - collectionserver-network
+    restart: unless-stopped
+
+  # Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: collectionserver-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collectionserver-network
+    restart: unless-stopped
+
+  # Cache
+  garnet:
+    image: ghcr.io/microsoft/garnet:latest
+    container_name: collectionserver-garnet
+    networks:
+      - collectionserver-network
+    restart: unless-stopped
+
+  # API Server
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    container_name: collectionserver-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__CacheConnection=garnet:6379
+      # External API Keys (Set via .env file)
+      - ExternalApis__GoogleBooks__ApiKey=${GOOGLE_BOOKS_API_KEY}
+      - ExternalApis__KakaoBook__ApiKey=${KAKAO_BOOK_API_KEY}
+      - ExternalApis__TMDb__ApiKey=${TMDB_API_KEY}
+      - ExternalApis__OMDb__ApiKey=${OMDB_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      garnet:
+        condition: service_started
+    networks:
+      - collectionserver-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  collectionserver-network:
+    driver: bridge

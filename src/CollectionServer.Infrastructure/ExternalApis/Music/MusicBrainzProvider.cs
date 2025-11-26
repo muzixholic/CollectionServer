@@ -43,7 +43,7 @@ public class MusicBrainzProvider : IMediaProvider
     {
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient("MusicBrainz");
             httpClient.BaseAddress = new Uri(_settings.BaseUrl);
             httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
             httpClient.DefaultRequestHeaders.Add("User-Agent", _settings.UserAgent);

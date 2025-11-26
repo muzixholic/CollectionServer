@@ -43,7 +43,7 @@ public class TMDbProvider : IMediaProvider
     {
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient("TMDb");
             httpClient.BaseAddress = new Uri(_settings.BaseUrl);
             httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 

@@ -6,8 +6,12 @@ using CollectionServer.Infrastructure.ExternalApis.Movies;
 using CollectionServer.Infrastructure.ExternalApis.Music;
 using CollectionServer.Infrastructure.Options;
 using CollectionServer.Infrastructure.Repositories;
+using CollectionServer.Infrastructure.Services;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Http.Resilience;
+using Polly;
+using StackExchange.Redis;
 using System.Threading.RateLimiting;
 
 namespace CollectionServer.Api.Extensions;
@@ -40,6 +44,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMediaService, MediaService>();
         services.AddSingleton<BarcodeValidator>();
 
+        // Cache 등록 (Garnet)
+        var cacheConnection = configuration.GetConnectionString("CacheConnection") ?? "localhost:6379";
+        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(cacheConnection));
+        services.AddSingleton<ICacheService, GarnetCacheService>();
+
         return services;
     }
 
@@ -53,18 +62,100 @@ public static class ServiceCollectionExtensions
         // HttpClient factory 구성
         services.AddHttpClient();
 
+        // Resilience Pipeline 설정
+        var resilienceOptions = new HttpStandardResilienceOptions
+        {
+            Retry = new HttpRetryStrategyOptions
+            {
+                MaxRetryAttempts = 3,
+                Delay = TimeSpan.FromSeconds(2),
+                BackoffType = DelayBackoffType.Exponential
+            },
+            CircuitBreaker = new HttpCircuitBreakerStrategyOptions
+            {
+                SamplingDuration = TimeSpan.FromSeconds(30),
+                FailureRatio = 0.5,
+                MinimumThroughput = 10
+            },
+            TotalRequestTimeout = new HttpTimeoutStrategyOptions
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            }
+        };
+
         // Book providers
+        services.AddHttpClient("GoogleBooks")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, GoogleBooksProvider>();
+
+        services.AddHttpClient("KakaoBook")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, KakaoBookProvider>();
+
+        services.AddHttpClient("AladinApi")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, AladinApiProvider>();
 
         // Movie providers
+        services.AddHttpClient("TMDb")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, TMDbProvider>();
+
+        services.AddHttpClient("OMDb")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, OMDbProvider>();
+
+        services.AddHttpClient("UpcItemDb")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, UpcItemDbProvider>();
 
         // Music providers
+        services.AddHttpClient("MusicBrainz")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, MusicBrainzProvider>();
+
+        services.AddHttpClient("Discogs")
+            .AddStandardResilienceHandler(options => 
+            {
+                options.Retry = resilienceOptions.Retry;
+                options.CircuitBreaker = resilienceOptions.CircuitBreaker;
+                options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
+            });
         services.AddScoped<IMediaProvider, DiscogsProvider>();
 
         return services;

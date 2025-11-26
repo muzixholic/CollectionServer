@@ -38,7 +38,7 @@ public class BarcodeEdgeCaseTests
     {
         // Act & Assert
         var exception = Assert.Throws<InvalidBarcodeException>(() => _validator.Validate(barcode));
-        exception.Message.Should().Contain("체크 디지트");
+        exception.Message.Should().Contain("체크섬이 유효하지 않습니다");
     }
 
     [Theory]
@@ -72,7 +72,7 @@ public class BarcodeEdgeCaseTests
 
         // Act & Assert
         var exception = Assert.Throws<InvalidBarcodeException>(() => _validator.Validate(barcode));
-        exception.Message.Should().Contain("체크 디지트");
+        exception.Message.Should().Contain("체크섬이 유효하지 않습니다");
     }
 
     [Theory]
@@ -83,7 +83,10 @@ public class BarcodeEdgeCaseTests
     {
         // Act & Assert
         var exception = Assert.Throws<InvalidBarcodeException>(() => _validator.Validate(barcode));
-        exception.Message.Should().Contain("유효하지 않은 바코드");
+        // Cleaning removes invalid chars, so it usually fails length check
+        exception.Message.Should().Match(m => 
+            m.Contains("지원하지 않는 바코드 길이") || 
+            m.Contains("비어 있습니다"));
     }
 
     [Fact]
@@ -94,9 +97,7 @@ public class BarcodeEdgeCaseTests
 
         // Act & Assert - will throw check digit error since X in middle breaks calculation
         var exception = Assert.Throws<InvalidBarcodeException>(() => _validator.Validate(barcode));
-        exception.Message.Should().Match(m => 
-            m.Contains("유효하지 않은 바코드") || 
-            m.Contains("체크 디지트"));
+        exception.Message.Should().Contain("체크섬이 유효하지 않습니다");
     }
 
     [Fact]

@@ -27,6 +27,9 @@ public class MediaItemConfiguration : IEntityTypeConfiguration<MediaItem>
         builder.HasIndex(m => m.MediaType)
             .HasDatabaseName("idx_media_type");
 
+        builder.HasIndex(m => m.Title)
+            .HasDatabaseName("idx_title");
+
         builder.Property(m => m.Title)
             .IsRequired()
             .HasMaxLength(500);

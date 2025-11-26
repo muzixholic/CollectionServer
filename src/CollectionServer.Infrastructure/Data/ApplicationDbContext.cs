@@ -14,10 +14,7 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<MediaItem> MediaItems => Set<MediaItem>();
-    public DbSet<Book> Books => Set<Book>();
-    public DbSet<Movie> Movies => Set<Movie>();
-    public DbSet<MusicAlbum> MusicAlbums => Set<MusicAlbum>();
-
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

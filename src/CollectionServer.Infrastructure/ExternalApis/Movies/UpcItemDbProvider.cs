@@ -72,7 +72,7 @@ public class UpcItemDbProvider : IMediaProvider
 
     private async Task<string?> GetTitleFromUpcAsync(string barcode, CancellationToken cancellationToken)
     {
-        var client = _httpClientFactory.CreateClient();
+        var client = _httpClientFactory.CreateClient("UpcItemDb");
         client.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 
         var url = $"{_settings.BaseUrl}/lookup?upc={barcode}";
@@ -119,7 +119,7 @@ public class UpcItemDbProvider : IMediaProvider
 
     private async Task<int?> SearchTmdbIdAsync(string title, CancellationToken cancellationToken)
     {
-        var client = _httpClientFactory.CreateClient();
+        var client = _httpClientFactory.CreateClient("TMDb");
         client.BaseAddress = new Uri(_tmdbSettings.BaseUrl);
         client.Timeout = TimeSpan.FromSeconds(_tmdbSettings.TimeoutSeconds);
 
@@ -139,7 +139,7 @@ public class UpcItemDbProvider : IMediaProvider
 
     private async Task<MediaItem?> GetTmdbDetailsAsync(int movieId, string barcode, CancellationToken cancellationToken)
     {
-        var client = _httpClientFactory.CreateClient();
+        var client = _httpClientFactory.CreateClient("TMDb");
         client.BaseAddress = new Uri(_tmdbSettings.BaseUrl);
         
         // Append credits to get cast/director

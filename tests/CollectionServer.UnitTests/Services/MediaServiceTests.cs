@@ -18,6 +18,7 @@ public class MediaServiceTests
     private readonly Mock<IMediaRepository> _mockRepository;
     private readonly BarcodeValidator _validator;
     private readonly Mock<ILogger<MediaService>> _mockLogger;
+    private readonly Mock<ICacheService> _mockCacheService;
     private readonly MediaService _service;
 
     public MediaServiceTests()
@@ -25,8 +26,41 @@ public class MediaServiceTests
         _mockRepository = new Mock<IMediaRepository>();
         _validator = new BarcodeValidator();
         _mockLogger = new Mock<ILogger<MediaService>>();
+        _mockCacheService = new Mock<ICacheService>();
         var emptyProviders = new List<IMediaProvider>();
-        _service = new MediaService(_mockRepository.Object, _validator, emptyProviders, _mockLogger.Object);
+        _service = new MediaService(
+            _mockRepository.Object, 
+            _validator, 
+            emptyProviders, 
+            _mockCacheService.Object,
+            _mockLogger.Object);
+    }
+
+    [Fact]
+    public async Task GetMediaByBarcodeAsync_캐시에_존재_반환()
+    {
+        // Arrange
+        var barcode = "9788966262281";
+        var expectedBook = new Book
+        {
+            Id = Guid.NewGuid(),
+            Barcode = barcode,
+            Title = "캐시된 도서",
+            MediaType = MediaType.Book
+        };
+
+        _mockCacheService
+            .Setup(c => c.GetAsync<MediaItem>($"media:{barcode}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedBook);
+
+        // Act
+        var result = await _service.GetMediaByBarcodeAsync(barcode);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("캐시된 도서", result.Title);
+        // Repository는 호출되지 않아야 함
+        _mockRepository.Verify(r => r.GetByBarcodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

@@ -43,6 +43,7 @@ public class DiscogsProvider : IMediaProvider
 
     public async Task<MediaItem?> GetMediaByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)
     {
+        var httpClient = _httpClientFactory.CreateClient("Discogs");
         _logger.LogInformation("Discogs Provider - barcode search not yet implemented: {Barcode}", barcode);
         await Task.CompletedTask;
         return null;

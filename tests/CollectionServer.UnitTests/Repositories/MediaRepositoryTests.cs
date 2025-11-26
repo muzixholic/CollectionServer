@@ -35,7 +35,7 @@ public class MediaRepositoryTests
 
         await using (var context = new ApplicationDbContext(options))
         {
-            context.Books.Add(book);
+            context.MediaItems.Add(book);
             await context.SaveChangesAsync();
         }
 
@@ -83,7 +83,7 @@ public class MediaRepositoryTests
 
         await using (var context = new ApplicationDbContext(options))
         {
-            context.Movies.Add(movie);
+            context.MediaItems.Add(movie);
             await context.SaveChangesAsync();
         }
 
@@ -115,7 +115,7 @@ public class MediaRepositoryTests
 
         await using (var context = new ApplicationDbContext(options))
         {
-            context.MusicAlbums.Add(album);
+            context.MediaItems.Add(album);
             await context.SaveChangesAsync();
         }
 
@@ -177,7 +177,7 @@ public class MediaRepositoryTests
 
         await using (var context = new ApplicationDbContext(options))
         {
-            context.Books.Add(book);
+            context.MediaItems.Add(book);
             await context.SaveChangesAsync();
         }
 
@@ -218,7 +218,7 @@ public class MediaRepositoryTests
         Guid bookId;
         await using (var context = new ApplicationDbContext(options))
         {
-            context.Books.Add(book);
+            context.MediaItems.Add(book);
             await context.SaveChangesAsync();
             bookId = book.Id;
         }
@@ -253,7 +253,7 @@ public class MediaRepositoryTests
 
         await using (var context = new ApplicationDbContext(options))
         {
-            context.Books.Add(book);
+            context.MediaItems.Add(book);
             await context.SaveChangesAsync();
         }
 
@@ -289,8 +289,8 @@ public class MediaRepositoryTests
 
         await using (var context = new ApplicationDbContext(options))
         {
-            context.Books.Add(book);
-            context.Movies.Add(movie);
+            context.MediaItems.Add(book);
+            context.MediaItems.Add(movie);
             await context.SaveChangesAsync();
         }
 

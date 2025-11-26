@@ -42,7 +42,7 @@ public class GoogleBooksProvider : IMediaProvider
     {
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient("GoogleBooks");
             httpClient.BaseAddress = new Uri(_settings.BaseUrl);
             httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 

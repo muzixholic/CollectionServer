@@ -14,39 +14,53 @@ public class MediaService : IMediaService
     private readonly IMediaRepository _repository;
     private readonly BarcodeValidator _validator;
     private readonly IEnumerable<IMediaProvider> _providers;
+    private readonly ICacheService _cacheService;
     private readonly ILogger<MediaService> _logger;
 
     public MediaService(
         IMediaRepository repository, 
         BarcodeValidator validator,
         IEnumerable<IMediaProvider> providers,
+        ICacheService cacheService,
         ILogger<MediaService> logger)
     {
         _repository = repository;
         _validator = validator;
         _providers = providers;
+        _cacheService = cacheService;
         _logger = logger;
     }
 
     /// <summary>
     /// 바코드로 미디어 항목 조회
-    /// Database-First: 먼저 데이터베이스 조회, 없으면 외부 API 호출
+    /// Cache-First -> Database-First -> External API
     /// </summary>
     public async Task<MediaItem> GetMediaByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)
     {
         // 1. 바코드 검증
         _validator.Validate(barcode);
 
-        // 2. 데이터베이스 조회 (Database-First)
+        // 2. 캐시 조회 (Cache-First)
+        var cacheKey = $"media:{barcode}";
+        var cachedItem = await _cacheService.GetAsync<MediaItem>(cacheKey, cancellationToken);
+        if (cachedItem != null)
+        {
+            _logger.LogInformation("Found media item in cache for barcode: {Barcode}", barcode);
+            return cachedItem;
+        }
+
+        // 3. 데이터베이스 조회 (Database-First)
         var mediaItem = await _repository.GetByBarcodeAsync(barcode, cancellationToken);
         
         if (mediaItem != null)
         {
             _logger.LogInformation("Found media item in database for barcode: {Barcode}", barcode);
+            // 캐시에 저장 (1시간)
+            await _cacheService.SetAsync(cacheKey, mediaItem, TimeSpan.FromHours(1), cancellationToken);
             return mediaItem;
         }
 
-        // 3. 외부 API 우선순위 기반 폴백
+        // 4. 외부 API 우선순위 기반 폴백
         _logger.LogInformation("Media item not found in database, trying external providers for barcode: {Barcode}", barcode);
         
         _logger.LogInformation("Total providers registered: {Count}", _providers.Count());
@@ -84,10 +98,13 @@ public class MediaService : IMediaService
                     _logger.LogInformation("Successfully retrieved media from provider {Provider}: {Title}", 
                         provider.ProviderName, result.Title);
 
-                    // 4. 데이터베이스에 저장 (캐싱)
+                    // 5. 데이터베이스에 저장 (영구 저장)
                     await _repository.AddAsync(result, cancellationToken);
                     _logger.LogInformation("Saved media item to database for future queries: {Barcode}", barcode);
                     
+                    // 6. 캐시에 저장 (1시간)
+                    await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1), cancellationToken);
+
                     return result;
                 }
                 else

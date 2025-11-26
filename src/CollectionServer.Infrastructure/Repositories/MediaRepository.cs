@@ -22,7 +22,7 @@ public class MediaRepository : IMediaRepository
     {
         return await _context.MediaItems
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Barcode == barcode, cancellationToken);
+            .FirstOrDefaultAsync(m => m.Barcode.ToLower() == barcode.ToLower(), cancellationToken);
     }
 
     public async Task<MediaItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
