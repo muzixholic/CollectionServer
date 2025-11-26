@@ -1,9 +1,12 @@
+using CollectionServer.Core.Interfaces;
 using CollectionServer.Infrastructure.Data;
+using CollectionServer.IntegrationTests.Fakes;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace CollectionServer.IntegrationTests.Fixtures;
 
@@ -35,6 +38,16 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(descriptor);
             }
 
+            // 기존 ICacheService 및 IConnectionMultiplexer 제거
+            var cacheDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(ICacheService));
+            if (cacheDescriptor != null) services.Remove(cacheDescriptor);
+
+            var redisDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IConnectionMultiplexer));
+            if (redisDescriptor != null) services.Remove(redisDescriptor);
+
+            // FakeCacheService 등록
+            services.AddSingleton<ICacheService, FakeCacheService>();
+
             // In-Memory 데이터베이스로 교체 (테스트 클래스별 격리)
             services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -54,7 +67,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
     }
 
     /// <summary>
-    /// 테스트 간 데이터베이스 초기화
+    /// 테스트 간 데이터베이스 및 캐시 초기화
     /// </summary>
     public void ResetDatabase()
     {
@@ -63,5 +76,9 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         
         db.Database.EnsureDeleted();
         db.Database.EnsureCreated();
+
+        // 캐시 초기화
+        var cache = Services.GetRequiredService<ICacheService>() as FakeCacheService;
+        cache?.Clear();
     }
 }
