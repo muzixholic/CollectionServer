@@ -32,7 +32,12 @@
            run: dotnet build --no-restore --configuration Release
 
          - name: Test
-           run: dotnet test --no-build --configuration Release --verbosity normal
+             run: |
+               dotnet test tests/CollectionServer.UnitTests --no-build --configuration Release --verbosity norma
+               dotnet test tests/CollectionServer.IntegrationTests --no-build --configuration Release --verbosity
+   normal
+               dotnet test tests/CollectionServer.ContractTests --no-build --configuration Release --verbosity normal
+
 
          - name: Log in to the Container registry
            if: github.event_name != 'pull_request'
