@@ -11,8 +11,6 @@ public class MovieConfiguration : IEntityTypeConfiguration<Movie>
 {
     public void Configure(EntityTypeBuilder<Movie> builder)
     {
-        builder.ToTable("Movies");
-
         builder.Property(m => m.Director)
             .HasMaxLength(200);
 

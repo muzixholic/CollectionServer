@@ -36,8 +36,22 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 3. GHCR 푸시(`latest`, `commit SHA` 태그)
 4. (선택) 릴리스 노트에 이미지 Digest 기록
 
+## TLS 구성 절차
+1. **도메인 및 DNS**: `example.com` 같은 실제 도메인을 서버 공인 IP로 A/CNAME 매핑합니다.
+2. **Certbot 준비**:
+   ```bash
+   docker-compose run --rm nginx sh -c "mkdir -p /var/www/certbot"
+   docker-compose run --rm certbot certonly --webroot \
+     -w /var/www/certbot \
+     -d example.com -d www.example.com \
+     --email admin@example.com --agree-tos --no-eff-email
+   ```
+3. **Nginx 설정**: `nginx/conf.d/default.conf`의 `server_name`, `ssl_certificate`, `ssl_certificate_key` 경로를 실제 도메인으로 교체합니다.
+4. **재기동**: `docker-compose restart nginx` 후 `https://example.com/health`로 TLS/프록시 상태를 확인합니다.
+5. **자동 갱신**: `certbot renew`를 cron 또는 GitHub Actions로 주기 실행하고, 인증서 갱신 후 `nginx`를 재로드합니다.
+
 ## 다음 단계
 - [ ] 실 서버 또는 Kubernetes 환경에 `docker-compose.prod.yml`을 적용하고 헬스 체크를 자동화합니다.
-- [ ] Certbot 또는 클라우드 인증서를 이용해 TLS를 구성하고 `nginx/conf.d/default.conf`에 도메인을 반영합니다.
+- [ ] 위 TLS 절차를 적용해 HTTPS를 기본으로 운영합니다.
 - [ ] 배포 후 `curl https://<domain>/health`와 같은 헬스 점검 스크립트를 추가합니다.
 - [ ] Grafana/Prometheus 혹은 클라우드 모니터링에 Postgres·Garnet·API 지표를 연동합니다.

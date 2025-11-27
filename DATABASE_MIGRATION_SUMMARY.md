@@ -25,11 +25,12 @@
 4. `docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d` 명령으로 운영 유사 환경을 띄워 검증합니다.
 
 ## 마이그레이션 계획
-1. **Baseline 마이그레이션 생성**
+1. **Baseline 마이그레이션 생성** – `InitialCreate` 마이그레이션이 이미 `src/CollectionServer.Infrastructure/Data/Migrations` 경로에 추가되었습니다.
    ```bash
    dotnet ef migrations add InitialCreate \
      --project src/CollectionServer.Infrastructure \
-     --startup-project src/CollectionServer.Api
+     --startup-project src/CollectionServer.Api \
+     --output-dir Data/Migrations
    ```
 2. **DB 적용**
    ```bash

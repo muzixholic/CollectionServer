@@ -11,8 +11,6 @@ public class MusicAlbumConfiguration : IEntityTypeConfiguration<MusicAlbum>
 {
     public void Configure(EntityTypeBuilder<MusicAlbum> builder)
     {
-        builder.ToTable("MusicAlbums");
-
         builder.Property(m => m.Artist)
             .HasMaxLength(200);
 

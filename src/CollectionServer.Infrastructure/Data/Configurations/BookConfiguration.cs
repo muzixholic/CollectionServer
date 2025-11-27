@@ -11,8 +11,6 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
 {
     public void Configure(EntityTypeBuilder<Book> builder)
     {
-        builder.ToTable("Books");
-
         builder.Property(b => b.Isbn13)
             .HasMaxLength(13);
 

@@ -101,6 +101,8 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 `ASPNETCORE_ENVIRONMENT=Production`으로 실행되어 PostgreSQL + Garnet + Nginx가 활성화되며, GHCR(`ghcr.io/<repo>:latest`) 이미지가 자동으로 Pull 됩니다.
 
+> TLS를 활성화하려면 `nginx/conf.d/default.conf`에 실제 도메인과 인증서 경로를 설정하고, Certbot을 통해 `/var/www/certbot` 웹루트를 이용해 인증서를 발급한 뒤 `docker-compose restart nginx`로 반영하세요.
+
 ## 테스트
 전체 테스트 실행:
 ```bash
