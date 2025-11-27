@@ -3,6 +3,9 @@ using CollectionServer.Api.Middleware;
 using CollectionServer.Core.Interfaces;
 using CollectionServer.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 
 using Microsoft.AspNetCore.Http.Json;
@@ -46,6 +49,33 @@ else
 // 외부 API 설정 및 Provider 등록 (모든 환경에서 필요)
 builder.Services.AddExternalApiSettings(builder.Configuration);
 builder.Services.AddRateLimitingServices();
+builder.Services.AddHealthChecks();
+
+var otlpEndpoint = builder.Configuration["Monitoring:OtlpExporter:Endpoint"];
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService("CollectionServer.Api", serviceInstanceId: Environment.MachineName))
+    .WithMetrics(metrics =>
+    {
+        metrics.AddAspNetCoreInstrumentation()
+               .AddHttpClientInstrumentation()
+               .AddRuntimeInstrumentation()
+               .AddPrometheusExporter();
+    })
+    .WithTracing(tracing =>
+    {
+        tracing.AddAspNetCoreInstrumentation()
+               .AddHttpClientInstrumentation();
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            tracing.AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri(otlpEndpoint);
+            });
+        }
+    });
 
 // OpenAPI/Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -95,6 +125,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
 app.UseRateLimiter();
+app.MapPrometheusScrapingEndpoint();
 
 // 헬스 체크 엔드포인트
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))

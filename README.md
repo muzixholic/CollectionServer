@@ -96,14 +96,29 @@ podman-compose up -d
 ```bash
 cp .env.prod.example .env.prod   # DB + API 키 입력
 cp .env.example .env            # (선택) Discogs 등 추가 비밀 값
+mkdir -p logs                   # Serilog 파일 공유 (Promtail)
 
 docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
-`ASPNETCORE_ENVIRONMENT=Production`으로 실행되어 PostgreSQL + Garnet + Nginx가 활성화되며, GHCR(`ghcr.io/<repo>:latest`) 이미지가 자동으로 Pull 됩니다.
+`ASPNETCORE_ENVIRONMENT=Production`으로 실행되어 PostgreSQL + Garnet + Nginx가 활성화되며, GHCR(`ghcr.io/<repo>:latest`) 이미지가 자동으로 Pull 됩니다. `./logs` 디렉터리는 컨테이너 `/app/logs`에 마운트되어 Promtail이 호스트에서 파일을 수집할 수 있습니다.
 
 > TLS를 활성화하려면 `nginx/conf.d/default.conf`에 실제 도메인과 인증서 경로를 설정하고, Certbot을 통해 `/var/www/certbot` 웹루트를 이용해 인증서를 발급한 뒤 `docker-compose restart nginx`로 반영하세요.
 > - 장기적으로는 `docker compose --profile certbot up -d certbot` 명령으로 자동 갱신 컨테이너를 실행하거나,
 > - `ops/certbot-renew.workflow.yml` 템플릿을 `.github/workflows/certbot-renew.yml`로 복사해 GitHub Actions 기반 원격 `certbot renew` → `nginx` 재로드를 자동화하세요. (필수 Secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`(옵션), `DEPLOY_PATH`, `LETSENCRYPT_EMAIL`, `LETSENCRYPT_DOMAINS`)
+
+### 모니터링 스택 (Prometheus / Grafana / Loki / Tempo / Alertmanager)
+```bash
+cd ops/monitoring
+# 필요 시 alertmanager.yml / promtail-config.yml을 편집해 알림 채널·로그 경로를 조정하세요.
+docker compose -f docker-compose.monitoring.yml up -d
+```
+- **Prometheus**: http://localhost:9090, `/metrics` (API)와 자체 상태를 수집
+- **Alertmanager**: http://localhost:9093, `ops/monitoring/alertmanager.yml`에서 이메일/웹훅 설정
+- **Grafana**: http://localhost:3000 (`admin/admin` 초기 비밀번호) – Prometheus/Loki/Tempo 데이터 소스 추가 후 대시보드 구성
+- **Loki + Promtail**: `./logs`(Serilog 파일)을 읽어 Loki에 저장, Grafana Explore에서 조회
+- **Tempo**: OTLP gRPC(4317)/HTTP(4318)를 통해 OpenTelemetry Trace 수신
+
+> 모니터링 스택은 메인 서비스와 동일한 `collectionserver-network`를 사용하도록 구성되어 있습니다. 네트워크가 없다면 `docker network create collectionserver-network` 후 실행하세요.
 
 ## 테스트
 전체 테스트 실행:

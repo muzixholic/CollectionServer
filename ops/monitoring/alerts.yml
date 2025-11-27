@@ -1,0 +1,19 @@
+groups:
+  - name: collectionserver-alerts
+    rules:
+      - alert: ApiDown
+        expr: up{job="collectionserver-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CollectionServer API Down"
+          description: "No scrape targets responded for job=collectionserver-api in the last minute."
+      - alert: HighRateLimitErrors
+        expr: rate(http_requests_total{status_code="429"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Excessive 429 responses"
+          description: "Over 5 HTTP 429 responses per second in the last 5 minutes."

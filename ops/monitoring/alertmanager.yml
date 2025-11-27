@@ -1,0 +1,16 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'default'
+  repeat_interval: 1h
+
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: ops@example.com
+        from: noreply@example.com
+        smarthost: smtp.example.com:587
+        auth_username: ops@example.com
+        auth_identity: ops@example.com
+        auth_password: CHANGE_ME

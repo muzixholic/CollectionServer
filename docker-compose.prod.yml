@@ -64,6 +64,8 @@ services:
   api:
     image: ghcr.io/${GITHUB_REPOSITORY}:latest
     container_name: collectionserver-api
+    volumes:
+      - ./logs:/app/logs
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_HTTP_PORTS=8080

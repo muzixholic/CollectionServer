@@ -1,0 +1,33 @@
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+
+search_enabled: true
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+compactor:
+  compaction:
+    compaction_window: 1h
+    block_retention: 48h
+
+ingester:
+  max_block_duration: 5m
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      replication_factor: 1
+      kvstore:
+        store: inmemory

@@ -50,8 +50,15 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 4. **재기동**: `docker-compose restart nginx` 후 `https://example.com/health`로 TLS/프록시 상태를 확인합니다.
 5. **자동 갱신**: `certbot renew`를 cron 또는 GitHub Actions 템플릿(`ops/certbot-renew.workflow.yml` → `.github/workflows/certbot-renew.yml`)으로 주기 실행하고, 인증서 갱신 후 `nginx`를 재로드합니다.
 
+## 모니터링 스택
+- 위치: `ops/monitoring/docker-compose.monitoring.yml`
+- 구성: Prometheus(9090) + Alertmanager(9093) + Grafana(3000) + Loki/Promtail(3100/9080) + Tempo(4317/3200)
+- 실행 전제: 메인 서비스와 동일한 `collectionserver-network` 외부 네트워크, API 로그 디렉터리(`./logs`) 존재
+- 실행 명령: `docker compose -f ops/monitoring/docker-compose.monitoring.yml up -d`
+- Alertmanager 수신자, Promtail 로그 경로, Grafana Admin 비밀번호 등은 각 설정 파일에서 수정 가능
+
 ## 다음 단계
 - [ ] 실 서버 또는 Kubernetes 환경에 `docker-compose.prod.yml`을 적용하고 헬스 체크를 자동화합니다.
 - [ ] 위 TLS 절차를 적용해 HTTPS를 기본으로 운영합니다.
+- [ ] 모니터링 스택을 기동하고 Grafana 대시보드/알림 규칙을 구성합니다.
 - [ ] 배포 후 `curl https://<domain>/health`와 같은 헬스 점검 스크립트를 추가합니다.
-- [ ] Grafana/Prometheus 혹은 클라우드 모니터링에 Postgres·Garnet·API 지표를 연동합니다.
