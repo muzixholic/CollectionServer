@@ -117,6 +117,7 @@ docker compose -f docker-compose.monitoring.yml up -d
 - **Grafana**: http://localhost:3000 (`admin/admin` 초기 비밀번호) – Prometheus/Loki/Tempo 데이터 소스 추가 후 대시보드 구성
 - **Loki + Promtail**: `./logs`(Serilog 파일)을 읽어 Loki에 저장, Grafana Explore에서 조회
 - **Tempo**: OTLP gRPC(4317)/HTTP(4318)를 통해 OpenTelemetry Trace 수신
+- **Alertmanager (Telegram 기본)**: `ops/monitoring/alertmanager.yml` 에서 `bot_token`/`chat_id` 를 텔레그램 봇/채널 값으로 교체하세요. Slack 유료 플랜 전환 시 `slack_configs` 의 웹훅 URL과 채널을 설정하고 route 의 기본 receiver 를 `slack` 으로 변경하면 됩니다.
 - **주요 메트릭**: `collectionserver_cache_hits_total`, `collectionserver_cache_misses_total`, `collectionserver_database_hits_total`, `collectionserver_provider_success_total`, `collectionserver_provider_failure_total`, `collectionserver_provider_latency_ms`, `collectionserver_rate_limit_rejections_total`
 
 > 모니터링 스택은 메인 서비스와 동일한 `collectionserver-network`를 사용하도록 구성되어 있습니다. 네트워크가 없다면 `docker network create collectionserver-network` 후 실행하세요.

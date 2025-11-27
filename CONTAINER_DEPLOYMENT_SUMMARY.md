@@ -55,7 +55,8 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 - 구성: Prometheus(9090) + Alertmanager(9093) + Grafana(3000) + Loki/Promtail(3100/9080) + Tempo(4317/3200)
 - 실행 전제: 메인 서비스와 동일한 `collectionserver-network` 외부 네트워크, API 로그 디렉터리(`./logs`) 존재
 - 실행 명령: `docker compose -f ops/monitoring/docker-compose.monitoring.yml up -d`
-- Alertmanager 수신자, Promtail 로그 경로, Grafana Admin 비밀번호 등은 각 설정 파일에서 수정 가능
+- Alertmanager 기본값은 텔레그램 봇으로 설정되어 있으므로 `ops/monitoring/alertmanager.yml` 에서 `bot_token`/`chat_id`를 교체하세요. 향후 Slack 유료 플랜을 도입하면 같은 파일의 `slack_configs` 웹훅과 route 설정을 활성화하면 됩니다.
+- Promtail 로그 경로, Grafana Admin 비밀번호 등은 각 설정 파일에서 수정 가능
 
 ## 다음 단계
 - [ ] 실 서버 또는 Kubernetes 환경에 `docker-compose.prod.yml`을 적용하고 헬스 체크를 자동화합니다.
