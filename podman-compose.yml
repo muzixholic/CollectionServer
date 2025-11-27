@@ -54,8 +54,27 @@ services:
       - collectionserver-network
     restart: unless-stopped
 
+  prometheus:
+    image: docker.io/prom/prometheus:latest
+    container_name: collectionserver-prometheus
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - collectionserver-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+    driver: local
+  prometheus_data:
     driver: local
 
 networks:

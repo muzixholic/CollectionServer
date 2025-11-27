@@ -13,7 +13,8 @@ CollectionServer는 캐시 우선 조회, 외부 Provider 연동, 배포 문서�
 | 6. Performance | 인덱스, 캐시, 로깅 | ✅ 완료 | Garnet Cache-first, DB 인덱스, 응답 시간 로그, 운영 환경에서 Postgres + Garnet 사용 |
 | 7. Resilience & Fallback | 우선순위 체인, 회복탄력성 | ✅ 완료 | `AddStandardResilienceHandler`로 재시도·서킷브레이커·타임아웃 표준화 |
 | 8. Rate Limiting | 고정 창 정책 | ✅ 완료 | 개발 100 req/min, 운영 200 req/min, RateLimiting 미들웨어 적용 |
-| 9. Deployment | 컨테이너, CI/CD, 문서 | ⚡ 서버 준비 중 | GHCR 배포, prod compose, nginx 템플릿, 배포 가이드 – 실 서버/인증서 준비 필요 |
+| 9. Monitoring | Prometheus | ✅ 완료 | OpenTelemetry Exporter 추가, Prometheus 컨테이너 구성 |
+| 10. Deployment | 컨테이너, CI/CD, 문서 | ⚡ 서버 준비 중 | GHCR 배포, prod compose, nginx 템플릿, 배포 가이드 – 실 서버/인증서 준비 필요 |
 
 ## 주요 성과
 - **Cache → DB → Provider** 파이프라인: Garnet/Redis 캐시에서 1시간 TTL로 저장하고, Miss 시 DB 및 Provider를 순차 조회.
