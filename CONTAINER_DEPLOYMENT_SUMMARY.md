@@ -48,7 +48,7 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
    ```
 3. **Nginx 설정**: `nginx/conf.d/default.conf`의 `server_name`, `ssl_certificate`, `ssl_certificate_key` 경로를 실제 도메인으로 교체합니다.
 4. **재기동**: `docker-compose restart nginx` 후 `https://example.com/health`로 TLS/프록시 상태를 확인합니다.
-5. **자동 갱신**: `certbot renew`를 cron 또는 GitHub Actions로 주기 실행하고, 인증서 갱신 후 `nginx`를 재로드합니다.
+5. **자동 갱신**: `certbot renew`를 cron 또는 GitHub Actions 템플릿(`ops/certbot-renew.workflow.yml` → `.github/workflows/certbot-renew.yml`)으로 주기 실행하고, 인증서 갱신 후 `nginx`를 재로드합니다.
 
 ## 다음 단계
 - [ ] 실 서버 또는 Kubernetes 환경에 `docker-compose.prod.yml`을 적용하고 헬스 체크를 자동화합니다.

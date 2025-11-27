@@ -1,0 +1,52 @@
+# GitHub Actions template for Certbot renewals.
+# Copy this file to .github/workflows/certbot-renew.yml in environments
+# where workflow creation is permitted.
+
+name: Certbot Renew (Template)
+
+on:
+  workflow_dispatch:
+    inputs:
+      domains:
+        description: "쉼표로 구분된 도메인 목록 (비워두면 Secrets 값 사용)"
+        required: false
+      dry_run:
+        description: "Certbot dry-run 모드"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "0 0 1 * *"
+
+jobs:
+  renew:
+    name: Renew TLS certificates
+    if: ${{ secrets.SSH_HOST != '' && secrets.SSH_USER != '' && secrets.SSH_PRIVATE_KEY != '' && secrets.DEPLOY_PATH != '' && secrets.LETSENCRYPT_EMAIL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run certbot on remote host
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            DOMAINS="${{ inputs.domains }}"
+            if [ -z "$DOMAINS" ]; then
+              DOMAINS="${{ secrets.LETSENCRYPT_DOMAINS }}"
+            fi
+
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              DRY_FLAG="--dry-run"
+            else
+              DRY_FLAG=""
+            fi
+
+            cd ${{ secrets.DEPLOY_PATH }}
+            docker compose -f docker-compose.prod.yml run --rm certbot renew --webroot -w ./certbot/www --quiet $DRY_FLAG || \
+            docker compose -f docker-compose.prod.yml run --rm certbot certonly --webroot -w ./certbot/www -d "$DOMAINS" --email ${{ secrets.LETSENCRYPT_EMAIL }} --agree-tos --no-eff-email $DRY_FLAG
+
+            docker compose -f docker-compose.prod.yml exec nginx nginx -s reload || docker compose -f docker-compose.prod.yml restart nginx

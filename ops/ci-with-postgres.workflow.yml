@@ -1,0 +1,103 @@
+# GitHub Actions template that validates EF Core migrations against PostgreSQL
+# and builds/pushes the container image. Copy to .github/workflows/ci-cd.yml
+# (or merge into an existing workflow) when workflow permissions are available.
+
+name: CI/CD Pipeline (Postgres + GHCR)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  EF_CONNECTION_STRING: Host=localhost;Port=5432;Database=collectionserver_ci;Username=ci_user;Password=ci_pass;Include Error Detail=true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_pass
+          POSTGRES_DB: collectionserver_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_user -d collectionserver_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Install PostgreSQL client
+      run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Test
+      run: dotnet test --no-build --configuration Release --verbosity normal
+
+    - name: Wait for PostgreSQL
+      env:
+        PGPASSWORD: ci_pass
+      run: |
+        for i in {1..10}; do
+          pg_isready -h localhost -p 5432 -U ci_user && exit 0
+          sleep 3
+        done
+        exit 1
+
+    - name: Install dotnet-ef CLI
+      run: |
+        dotnet tool install --global dotnet-ef
+        echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Apply EF Core migrations (CI)
+      run: dotnet ef database update --project src/CollectionServer.Infrastructure --startup-project src/CollectionServer.Api --connection "${{ env.EF_CONNECTION_STRING }}"
+
+    - name: Log in to the Container registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      if: github.event_name != 'pull_request'
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=sha,format=short
+
+    - name: Build and push Docker image
+      if: github.event_name != 'pull_request'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: Containerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}

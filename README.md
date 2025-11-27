@@ -102,6 +102,8 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 `ASPNETCORE_ENVIRONMENT=Production`으로 실행되어 PostgreSQL + Garnet + Nginx가 활성화되며, GHCR(`ghcr.io/<repo>:latest`) 이미지가 자동으로 Pull 됩니다.
 
 > TLS를 활성화하려면 `nginx/conf.d/default.conf`에 실제 도메인과 인증서 경로를 설정하고, Certbot을 통해 `/var/www/certbot` 웹루트를 이용해 인증서를 발급한 뒤 `docker-compose restart nginx`로 반영하세요.
+> - 장기적으로는 `docker compose --profile certbot up -d certbot` 명령으로 자동 갱신 컨테이너를 실행하거나,
+> - `ops/certbot-renew.workflow.yml` 템플릿을 `.github/workflows/certbot-renew.yml`로 복사해 GitHub Actions 기반 원격 `certbot renew` → `nginx` 재로드를 자동화하세요. (필수 Secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`(옵션), `DEPLOY_PATH`, `LETSENCRYPT_EMAIL`, `LETSENCRYPT_DOMAINS`)
 
 ## 테스트
 전체 테스트 실행:
@@ -123,7 +125,8 @@ dotnet test tests/CollectionServer.IntegrationTests
 - `specs/001-isbn-book-api/*.md` – 기능 명세, 설계, 작업 리스트
 
 ## 배포 & 모니터링
-- `.github/workflows/ci-cd.yml` – `dotnet test` → 컨테이너 빌드 → GHCR 배포 자동화
+- `.github/workflows/ci-cd.yml` – `dotnet test` → 컨테이너 빌드 → GHCR 배포 자동화 (필요 시 `ops/ci-with-postgres.workflow.yml` 템플릿을 병합하여 PostgreSQL 마이그레이션 검증 단계를 추가)
+- `ops/certbot-renew.workflow.yml` – GitHub Actions용 Certbot 파이프라인 템플릿 (복사 후 Secrets에 SSH/도메인 정보를 등록하여 사용)
 - `docker-compose.prod.yml` + `nginx/` – Nginx → API → Postgres → Garnet 파이프라인 예제
 - Serilog 구조화 로그는 콘솔 및 `logs/collectionserver-*.log` 파일로 출력되어 중앙집중 로그 시스템과 연동할 수 있습니다.
 

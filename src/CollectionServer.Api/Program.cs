@@ -1,6 +1,7 @@
 using CollectionServer.Api.Extensions;
 using CollectionServer.Api.Middleware;
 using CollectionServer.Core.Interfaces;
+using CollectionServer.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -74,6 +75,13 @@ if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Te
 
 var app = builder.Build();
 
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
 // 미들웨어 파이프라인
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
@@ -117,5 +125,5 @@ app.MapGet("/items/{barcode}", async (string barcode, IMediaService mediaService
    .Produces(StatusCodes.Status404NotFound)
    .Produces(StatusCodes.Status429TooManyRequests);
 
-app.Run();
+await app.RunAsync();
 

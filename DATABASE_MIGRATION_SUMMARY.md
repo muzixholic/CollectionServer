@@ -11,7 +11,7 @@
 | Development / Testing | EF InMemory (`UseInMemoryDatabase("CollectionServerDev")`) | FakeCacheService (테스트) / No-Op | `Program.cs` (28~44행) |
 | Production | PostgreSQL 16 (`UseNpgsql`) | Garnet (`GarnetCacheService`) | `ServiceCollectionExtensions.AddDatabaseServices` |
 
-`docker-compose.prod.yml`과 GitHub Actions 파이프라인은 항상 `ASPNETCORE_ENVIRONMENT=Production`으로 실행되므로 Postgres + Garnet 경로가 활성화됩니다.
+`docker-compose.prod.yml`과 GitHub Actions 파이프라인은 항상 `ASPNETCORE_ENVIRONMENT=Production`으로 실행되므로 Postgres + Garnet 경로가 활성화됩니다. 또한 Program.cs에서 운영 환경일 경우 `Database.MigrateAsync()`를 호출하므로 API 컨테이너가 기동될 때마다 최신 마이그레이션이 자동 적용됩니다. CI 환경에서 PostgreSQL을 띄워 마이그레이션을 검증하려면 `ops/ci-with-postgres.workflow.yml` 템플릿을 `.github/workflows`로 복사하여 사용하세요.
 
 ## 왜 InMemory를 유지하나요?
 1. **개발 속도** – 로컬에서 Postgres 없이 즉시 실행 가능.
