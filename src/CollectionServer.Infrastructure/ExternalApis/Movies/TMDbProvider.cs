@@ -1,10 +1,14 @@
 using CollectionServer.Core.Entities;
 using CollectionServer.Core.Enums;
 using CollectionServer.Core.Interfaces;
+using CollectionServer.Core.Models;
 using CollectionServer.Infrastructure.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Web;
 
 namespace CollectionServer.Infrastructure.ExternalApis.Movies;
 
@@ -15,15 +19,18 @@ public class TMDbProvider : IMediaProvider
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly TMDbSettings _settings;
+    private readonly IUpcResolver _upcResolver;
     private readonly ILogger<TMDbProvider> _logger;
 
     public TMDbProvider(
         IHttpClientFactory httpClientFactory,
         IOptions<ExternalApiSettings> settings,
+        IUpcResolver upcResolver,
         ILogger<TMDbProvider> logger)
     {
         _httpClientFactory = httpClientFactory;
         _settings = settings.Value.TMDb;
+        _upcResolver = upcResolver;
         _logger = logger;
     }
 
@@ -32,8 +39,7 @@ public class TMDbProvider : IMediaProvider
 
     public bool SupportsBarcode(string barcode)
     {
-        // UPC (12 digits) or EAN-13 (13 digits, not ISBN)
-        var cleaned = barcode.Replace("-", "").Replace(" ", "");
+        var cleaned = barcode.Replace("-", string.Empty).Replace(" ", string.Empty);
         if (cleaned.Length == 12) return true;
         if (cleaned.Length == 13 && !cleaned.StartsWith("978") && !cleaned.StartsWith("979")) return true;
         return false;
@@ -41,35 +47,97 @@ public class TMDbProvider : IMediaProvider
 
     public async Task<MediaItem?> GetMediaByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)
     {
-        try
+        var resolution = await _upcResolver.ResolveAsync(barcode, cancellationToken);
+        if (resolution is null)
         {
-            var httpClient = _httpClientFactory.CreateClient("TMDb");
-            httpClient.BaseAddress = new Uri(_settings.BaseUrl);
-            httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
-
-            // TMDb doesn't directly support UPC search, so we need to search by external ID
-            // This is a simplified implementation - in production, you'd need more sophisticated logic
-            _logger.LogInformation("Querying TMDb API for barcode: {Barcode}", barcode);
-
-            // For MVP, we'll search by title match as TMDb doesn't have native barcode support
-            // In production, you'd integrate with a barcode-to-TMDb ID mapping service
-            _logger.LogWarning("TMDb API does not natively support barcode lookup. Barcode: {Barcode}", barcode);
-            return null;
-
-            // Placeholder for future implementation with proper barcode mapping
-            // var url = $"/search/movie?api_key={_settings.ApiKey}&query={barcode}";
-            // ... rest of implementation
-        }
-        catch (TaskCanceledException)
-        {
-            _logger.LogWarning("Request to TMDb API timed out for barcode: {Barcode}", barcode);
+            _logger.LogWarning("TMDbProvider - Unable to resolve UPC metadata for barcode: {Barcode}", barcode);
             return null;
         }
-        catch (Exception ex)
+
+        var tmdbId = resolution.TmdbId;
+        if (!tmdbId.HasValue)
         {
-            _logger.LogError(ex, "Error querying TMDb API for barcode: {Barcode}", barcode);
+            tmdbId = await SearchTmdbIdAsync(resolution.CleanTitle ?? resolution.Title, resolution.ReleaseYear, cancellationToken);
+        }
+
+        if (!tmdbId.HasValue)
+        {
+            _logger.LogWarning("TMDbProvider - Unable to map barcode {Barcode} to TMDb ID", barcode);
             return null;
         }
+
+        return await GetTmdbDetailsAsync(tmdbId.Value, barcode, resolution, cancellationToken);
+    }
+
+    private async Task<int?> SearchTmdbIdAsync(string? title, int? releaseYear, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return null;
+
+        var client = _httpClientFactory.CreateClient("TMDb");
+        client.BaseAddress = new Uri(_settings.BaseUrl);
+        client.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
+
+        var url = $"/3/search/movie?api_key={_settings.ApiKey}&query={HttpUtility.UrlEncode(title)}";
+        if (releaseYear.HasValue)
+        {
+            url += $"&year={releaseYear.Value}";
+        }
+
+        var response = await client.GetAsync(url, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("TMDb search failed with status {Status}", response.StatusCode);
+            return null;
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        var result = JsonSerializer.Deserialize<TMDbSearchResponse>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        return result?.Results?.FirstOrDefault()?.Id;
+    }
+
+    private async Task<MediaItem?> GetTmdbDetailsAsync(int movieId, string barcode, UpcResolutionResult resolution, CancellationToken cancellationToken)
+    {
+        var client = _httpClientFactory.CreateClient("TMDb");
+        client.BaseAddress = new Uri(_settings.BaseUrl);
+        client.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
+
+        var url = $"/3/movie/{movieId}?api_key={_settings.ApiKey}&append_to_response=credits";
+        var response = await client.GetAsync(url, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("TMDb detail lookup failed with status {Status}", response.StatusCode);
+            return null;
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        var details = JsonSerializer.Deserialize<TMDbMovieDetails>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (details is null)
+        {
+            return null;
+        }
+
+        return new Movie
+        {
+            Id = Guid.NewGuid(),
+            Barcode = barcode,
+            MediaType = MediaType.Movie,
+            Title = details.Title ?? resolution.CleanTitle ?? resolution.Title,
+            Description = details.Overview ?? resolution.Description,
+            ImageUrl = !string.IsNullOrEmpty(details.PosterPath)
+                ? $"https://image.tmdb.org/t/p/w500{details.PosterPath}"
+                : resolution.ImageUrl,
+            Source = ProviderName,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Director = GetDirector(details.Credits),
+            Cast = GetCast(details.Credits),
+            ReleaseDate = ParseReleaseDate(details.ReleaseDate) ?? (resolution.ReleaseYear.HasValue
+                ? new DateTime(resolution.ReleaseYear.Value, 1, 1)
+                : null),
+            RuntimeMinutes = details.Runtime,
+            Genre = details.Genres?.FirstOrDefault()?.Name,
+            Rating = null
+        };
     }
 
     private static DateTime? ParseReleaseDate(string? dateString)
@@ -78,23 +146,27 @@ public class TMDbProvider : IMediaProvider
         return DateTime.TryParse(dateString, out var date) ? date : null;
     }
 
-    // Response DTOs
+    private static string GetDirector(TMDbCredits? credits)
+    {
+        var director = credits?.Crew?.FirstOrDefault(c => c.Job == "Director");
+        return director?.Name ?? "Unknown";
+    }
+
+    private static string GetCast(TMDbCredits? credits)
+    {
+        if (credits?.Cast == null) return string.Empty;
+        return string.Join(", ", credits.Cast.Take(5).Select(c => c.Name));
+    }
+
     private class TMDbSearchResponse
     {
-        public int Page { get; set; }
         public TMDbMovie[]? Results { get; set; }
-        public int TotalPages { get; set; }
-        public int TotalResults { get; set; }
     }
 
     private class TMDbMovie
     {
         public int Id { get; set; }
         public string? Title { get; set; }
-        public string? Overview { get; set; }
-        public string? PosterPath { get; set; }
-        public string? ReleaseDate { get; set; }
-        public decimal VoteAverage { get; set; }
     }
 
     private class TMDbMovieDetails
@@ -102,7 +174,9 @@ public class TMDbProvider : IMediaProvider
         public int Id { get; set; }
         public string? Title { get; set; }
         public string? Overview { get; set; }
+        [JsonPropertyName("poster_path")]
         public string? PosterPath { get; set; }
+        [JsonPropertyName("release_date")]
         public string? ReleaseDate { get; set; }
         public int Runtime { get; set; }
         public TMDbGenre[]? Genres { get; set; }

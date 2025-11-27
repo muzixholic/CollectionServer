@@ -62,6 +62,8 @@ public static class ServiceCollectionExtensions
         // HttpClient factory 구성
         services.AddHttpClient();
 
+        services.AddScoped<IUpcResolver, UpcItemDbResolver>();
+
         // Resilience Pipeline 설정
         var resilienceOptions = new HttpStandardResilienceOptions
         {
@@ -137,7 +139,6 @@ public static class ServiceCollectionExtensions
                 options.CircuitBreaker = resilienceOptions.CircuitBreaker;
                 options.TotalRequestTimeout = resilienceOptions.TotalRequestTimeout;
             });
-        services.AddScoped<IMediaProvider, UpcItemDbProvider>();
 
         // Music providers
         services.AddHttpClient("MusicBrainz")

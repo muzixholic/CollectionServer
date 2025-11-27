@@ -1,9 +1,8 @@
 # 외부 API Provider 구현 현황 (2025-11-27)
 
 ## 요약
-- ✅ 총 8개 Provider 중 6개는 프로덕션 수준(도서 3, 음악 2, 영화 UPC 브리지 1)으로 동작합니다.
-- ⚠️ TMDb / OMDb Provider는 UPC 직접 조회를 지원하지 않아 Stub 상태이며, 로그를 남기고 자연스럽게 폴백합니다.
-- 🧠 UpcItemDb + TMDb 브리지 Provider가 영화 UPC/EAN-13을 처리하여 TMDb 메타데이터를 반환합니다.
+- ✅ 총 8개 Provider는 모두 프로덕션 수준(도서 3, 음악 2, 영화 3)으로 동작하며, 영화 Provider는 UPC Resolver를 통해 직접 TMDb/OMDb로 연결됩니다.
+- 🧠 `UpcItemDbResolver` 가 UPC/EAN-13을 TMDb ID/제목으로 매핑해 TMDb·OMDb Provider가 직접 세부 정보를 가져오도록 지원합니다.
 - 🔐 API 키는 `.env`, `.env.prod`, `dotnet user-secrets` 등 외부 비밀 저장소를 통해 주입하며 Git에는 커밋하지 않습니다.
 
 ## Provider 매트릭스
@@ -14,14 +13,14 @@
 | 도서/음반/DVD | AladinApiProvider | ✅ 운영 | TTB Key | ISBN-10/13, UPC, EAN-13 | `mallType` 값으로 Book/Music/DVD 분기 |
 | 음악 | MusicBrainzProvider | ✅ 운영 | User-Agent 필수 | UPC/EAN-13 | 트랙 리스트와 레이블 정보 제공 |
 | 음악 | DiscogsProvider | ✅ 운영 | Token + User-Agent | UPC/EAN-13 | 2단계 검색(바코드 검색 → Release 상세) |
-| 영화 | UpcItemDbProvider (UpcItemDb + TMDb) | ✅ 운영 | UpcItemDb 공개 API, TMDb Key | UPC/EAN-13 (ISBN 제외) | UPCitemdb의 제목을 TMDb 검색 결과와 매칭 |
-| 영화 | TMDbProvider | ⚠️ Stub | API Key | UPC/EAN-13 (ISBN 제외) | 바코드 검색 미지원 → 현재는 경고 로그 후 null 반환 |
-| 영화 | OMDbProvider | ⚠️ Stub | API Key | UPC 12자리 | UPC→IMDb 매핑 부재로 Stub 유지 |
+| 영화 | UpcItemDbResolver (서비스) | ✅ 운영 | UpcItemDb 공개 API | UPC/EAN-13 (ISBN 제외) | 제목·연도·TMDb ID/캐시 결과를 Provider에 주입 |
+| 영화 | TMDbProvider | ✅ 운영 (Resolver) | API Key | UPC/EAN-13 (ISBN 제외) | Resolver가 반환한 TMDb ID/제목으로 상세 호출 |
+| 영화 | OMDbProvider | ✅ 운영 (Resolver) | API Key | UPC 12자리 | Resolver 결과(제목/연도/IMDb)로 OMDb 직접 조회 |
 
 ## 폴백 순서
 - **도서**: GoogleBooks (1) → KakaoBook (2) → Aladin (3)
 - **음악**: MusicBrainz (1) → Discogs (2) → Aladin (3, mallType=MUSIC)
-- **영화**: UpcItemDb+TMDb (2) → TMDb Stub (3) → OMDb Stub (4) → Aladin (5, mallType=DVD)
+- **영화**: TMDb (Resolver) (1) → OMDb (Resolver) (2) → Aladin (3, mallType=DVD)
 
 `MediaService`는 Provider 등록 수, `SupportsBarcode` 결과, 우선순위, 성공 여부를 모두 로그로 남기며 성공 시 DB와 캐시에 동시에 저장합니다.
 
@@ -69,11 +68,11 @@ dotnet user-secrets set "ExternalApis:OMDb:ApiKey"         "..."
 - `dotnet test` 전체 실행 시 Provider 테스트를 포함해 **280개** 테스트가 실행됩니다.
 
 ## 알려진 제한 사항
-1. **TMDb/OMDb Stub** – UPC 검색 미지원으로 현재는 로그 후 null 반환. UPC→IMDb 매핑 서비스 도입 전까지 UpcItemDb 브리지에 의존합니다.
+1. **UPC Resolver 정확도** – UpcItemDb Trial 데이터 품질에 따라 제목/연도 추출이 부정확할 수 있으며, 필요한 경우 상용 데이터셋 또는 IMDb API 연동을 고려해야 합니다.
 2. **Aladin API 트랙 정보 부족** – mallType=MUSIC에서도 트랙 정보가 제공되지 않아 빈 배열을 반환합니다(트랙 정보는 MusicBrainz/Discogs가 채움).
 3. **Discogs Rate Limit** – 비인증 상태 60 req/min, Token 사용 시 90 req/min으로 제한됩니다. 애플리케이션 RateLimiter(100 req/min)와 충돌하지 않도록 주의하세요.
 
 ## 향후 계획
-- 상용 UPC 데이터셋을 조사하여 TMDb/OMDb Provider를 완전 구현합니다.
+- 상용 UPC/IMDb 데이터셋을 도입하거나 OCR 기반 Resolver를 추가해 정확도를 높입니다.
 - Provider별 성공률·지연 시간 지표를 Prometheus/Serilog Sink로 수집합니다.
 - `ExternalApis` 설정에 대한 Configuration Binding 테스트를 추가해 잘못된 우선순위/타임아웃 값을 조기에 탐지합니다.

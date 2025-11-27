@@ -52,7 +52,7 @@ dotnet user-secrets set "ExternalApis:MusicBrainz:UserAgent" "CollectionServer/1
 | --- | --- |
 | Provider가 호출되지 않음 | `ExternalApis:{Provider}` 섹션 누락 여부, `SupportsBarcode` 로그 확인 |
 | 401/403 응답 | 잘못된 키 또는 필수 헤더(User-Agent, Token)가 누락되었는지 확인 |
-| 404만 반복 | 실제 데이터 부재이거나 TMDb/OMDb Stub이 호출된 상황 – UpcItemDb 브리지 결과를 확인 |
+| 404만 반복 | UPC Resolver가 정확한 제목/ID를 찾지 못한 상황 – UpcItemDbResolver 로그 및 캐시를 확인 |
 | 컨테이너에서 키 미주입 | `.env` 파일이 `env_file`로 연결되어 있는지, 변수명이 `ExternalApis__` 규칙을 따르는지 확인 |
 
 ## 보안 수칙
