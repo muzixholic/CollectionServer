@@ -1,322 +1,79 @@
-# 외부 API Provider 구현 완료 요약
+# 외부 API Provider 구현 현황 (2025-11-27)
 
-**날짜**: 2025-11-19  
-**상태**: ✅ **구현 완료** (5/7 Providers)
+## 요약
+- ✅ **6/8 providers** 는 프로덕션 수준으로 동작 (도서 3, 음악 2, UPC 브리지 1).
+- ⚠️ **TMDb / OMDb** 는 여전히 직접 UPC 검색을 지원하지 않아 Stub 상태로 유지 (로그와 graceful fallback 제공).
+- 🧠 **UpcItemDb + TMDb 브리지** 가 영화 UPC/EAN-13을 처리하여 TMDb 메타데이터를 반환.
+- 🔐 API 키는 `.env` / `.env.prod` / `dotnet user-secrets` 를 통해 주입하며 Git에는 저장하지 않습니다.
 
-## 📋 구현된 Providers
+## Provider 매트릭스
+| Media | Provider | 상태 | 인증 | 지원 바코드 | 비고 |
+| --- | --- | --- | --- | --- | --- |
+| Books | GoogleBooksProvider | ✅ Production | API Key (선택) | ISBN-10/13 | 국제 데이터, 표지/장르/페이지 |
+| Books | KakaoBookProvider | ✅ Production | Kakao REST API Key | ISBN-10/13 | 한국 서적, Authorization 헤더 사용 |
+| Books / Music / DVD | AladinApiProvider | ✅ Production | TTB Key | ISBN-10/13, UPC, EAN-13 | `mallType` 으로 Book/Music/DVD 자동 매핑 |
+| Music | MusicBrainzProvider | ✅ Production | User-Agent 필수 | UPC/EAN-13 | 트랙리스트 + 레이블 제공 |
+| Music | DiscogsProvider | ✅ Production | Token + User-Agent | UPC/EAN-13 | 2-step (search → release) + 트랙 정보 |
+| Movies | UpcItemDbProvider (UpcItemDb + TMDb) | ✅ Production | UpcItemDb: 공개, TMDb: API Key | UPC/EAN-13 (ISBN 제외) | UPCitemdb로 제목 확보 후 TMDb ID/상세 조회 |
+| Movies | TMDbProvider | ⚠️ Stub | API Key | UPC/EAN-13 (ISBN 제외) | TMDb는 UPC 검색을 지원하지 않아 현재는 로그 후 null 반환 |
+| Movies | OMDbProvider | ⚠️ Stub | API Key | UPC (12자리) | UPC→IMDb 매핑 부재로 Stub 유지 |
 
-### ✅ Books (도서)
+## 폴백 체인
+- **Books**: GoogleBooks (1) → KakaoBook (2) → Aladin (3)
+- **Music**: MusicBrainz (1) → Discogs (2) → Aladin (3, mallType=MUSIC 시)
+- **Movies**: UpcItemDb+TMDb (2) → TMDb Stub (3) → OMDb Stub (4) → Aladin (5, mallType=DVD)
 
-#### 1. **GoogleBooksProvider** ✅ (기존 완성)
-- Google Books API v1 연동
-- ISBN-10/13 검색 지원
-- 완전한 도서 정보 (제목, 저자, 출판사, 페이지, 장르, 표지)
-- **Status**: Production Ready
+`MediaService` 는 Provider 등록 수와 `SupportsBarcode` 결과를 모두 로그로 남기며, 성공 시 DB + 캐시에 저장합니다.
 
-#### 2. **KakaoBookProvider** ✅ (신규 구현)
-- Kakao Daum 검색 API 연동
-- REST API Key 인증 (Authorization: KakaoAK)
-- ISBN 타겟 검색
-- 한국 도서 우선 지원
-- **Status**: Production Ready
-
-#### 3. **AladinApiProvider** ✅ (신규 구현)
-- 알라딘 Open API 연동
-- ItemLookUp API 사용
-- ISBN으로 직접 조회
-- 한국 도서 상세 정보 (가격, 리뷰 등)
-- **Status**: Production Ready
-
-### ✅ Music (음악)
-
-#### 4. **MusicBrainzProvider** ✅ (기존 완성)
-- MusicBrainz API 연동
-- Barcode 검색 지원
-- 트랙 리스트 포함
-- User-Agent 필수
-- **Status**: Production Ready
-
-#### 5. **DiscogsProvider** ✅ (신규 구현)
-- Discogs Database Search API 연동
-- Barcode 검색 → Release ID → 상세 정보
-- 트랙 리스트, 레이블, 아티스트
-- User-Agent 필수
-- **Status**: Production Ready
-
-### ⚠️ Movies (영화)
-
-#### 6. **TMDbProvider** ⚠️ (제한적 지원)
-- The Movie Database API
-- **문제**: UPC/Barcode 직접 검색 불가
-- Title 검색으로 대체 가능하나 부정확
-- **Status**: Stub (Barcode 지원 안함)
-
-#### 7. **OMDbProvider** ⚠️ (제한적 지원)
-- Open Movie Database API
-- **문제**: UPC 직접 검색 불가
-- IMDb ID 또는 Title 필요
-- **Status**: Stub (Barcode 지원 안함)
-
-#### 8. **UpcItemDbProvider** ✅ (신규 구현)
-- UPCitemdb + TMDb Bridge
-- UPC/EAN -> Title (UPCitemdb) -> Details (TMDb)
-- 영화 바코드 검색 문제 해결
-- **Status**: Production Ready
-
-## 🎯 API별 특징 비교
-
-| Provider | Barcode 지원 | 인증 방식 | 응답 속도 | 데이터 품질 |
-|----------|------------|----------|----------|-----------|
-| Google Books | ✅ ISBN | API Key (선택) | 빠름 | 높음 |
-| Kakao Book | ✅ ISBN | REST API Key | 빠름 | 높음 (한국) |
-| Aladin | ✅ ISBN | TTB Key | 중간 | 매우 높음 (한국) |
-| MusicBrainz | ✅ UPC/EAN | User-Agent | 중간 | 높음 |
-| Discogs | ✅ UPC/EAN | Token (선택) | 느림 (2 calls) | 매우 높음 |
-| TMDb | ❌ | API Key | - | - |
-| OMDb | ❌ | API Key | - | - |
-
-## 📊 구현 통계
-
-```
-✅ 완전 구현: 5/7 (71%)
-⚠️  제한적 지원: 2/7 (29%)
-❌ 미구현: 0/7 (0%)
-
-도서 Provider: 3/3 (100%) ✅
-음악 Provider: 2/2 (100%) ✅
-영화 Provider: 0/2 (0%) ⚠️
-```
-
-## 🔧 구현 세부사항
-
-### Kakao Book API
-```csharp
-// Authorization 헤더
-Authorization: KakaoAK {REST_API_KEY}
-
-// 검색 엔드포인트
-GET /v3/search/book?query={isbn}&target=isbn
-
-// 응답 필드
-- documents[]: 검색 결과 배열
-  - title: 제목
-  - authors[]: 저자 배열
-  - contents: 설명
-  - thumbnail: 표지 이미지
-  - isbn: ISBN
-  - publisher: 출판사
-  - datetime: 출판일
-  - category[]: 카테고리
-```
-
-### Aladin API
-```csharp
-// Query String 인증
-ttbkey={API_KEY}
-
-// ItemLookUp 엔드포인트
-GET /ItemLookUp.aspx?ttbkey={key}&ItemId={isbn}&ItemIdType=ISBN&output=js
-
-// 응답 필드
-- item[]: 결과 배열
-  - title: 제목
-  - author: 저자
-  - description: 설명
-  - cover: 표지 이미지
-  - isbn13: ISBN-13
-  - publisher: 출판사
-  - pubDate: 출판일
-  - categoryName: 카테고리
-  - subInfo.itemPage: 페이지 수
-```
-
-### Discogs API
-```csharp
-// User-Agent 필수 + Token 인증
-User-Agent: CollectionServer/1.0
-Authorization: Discogs token={API_TOKEN}
-
-// 2단계 검색
-1. Database Search
-   GET /database/search?barcode={upc}&type=release
-
-2. Release Details
-   GET /releases/{id}
-
-// 응답 필드 (Release)
-- title: 앨범명
-- artists[].name: 아티스트
-- labels[].name: 레이블
-- genres[]: 장르
-- tracklist[]: 트랙 리스트
-  - position: 트랙 번호
-  - title: 트랙명
-  - duration: 길이 (mm:ss)
-```
-
-## ⚠️ 영화 Provider 문제점
-
-### TMDb & OMDb 제한사항
-1. **Barcode 미지원**
-   - 두 API 모두 UPC/EAN barcode 직접 검색 불가
-   - IMDb ID 또는 Title 검색만 가능
-
-2. **해결 방안**
-   - **Option 1**: 외부 Barcode → IMDb ID 매핑 서비스 사용
-     - UPCitemdb.com API
-     - DigitalEyes API
-   
-   - **Option 2**: 타이틀 기반 검색 (부정확)
-     - 사용자가 타이틀 입력
-     - Fuzzy matching 필요
-   
-   - **Option 3**: 사용 안함
-     - 영화는 다른 Provider 활용
-     - 또는 Barcode가 아닌 검색 방식 제공
-
-3. **현재 구현**
-   - TMDb: Stub (null 반환 + Warning 로그)
-   - OMDb: Stub (null 반환 + Warning 로그)
-
-## 🧪 테스트 결과
-
+## 설정 방법
+### 1. User Secrets (개발 환경)
 ```bash
-dotnet test --filter "FullyQualifiedName~Provider"
+cd src/CollectionServer.Api
+dotnet user-secrets init
 
-통과: 54/59
-실패: 5/59 (OMDb 13자리 EAN 테스트)
+# Books
+dotnet user-secrets set "ExternalApis:GoogleBooks:ApiKey" "..."
+dotnet user-secrets set "ExternalApis:KakaoBook:ApiKey"   "..."
+dotnet user-secrets set "ExternalApis:AladinApi:ApiKey"   "..."
+
+# Music
+dotnet user-secrets set "ExternalApis:MusicBrainz:UserAgent" "CollectionServer/1.0 (contact@example.com)"
+dotnet user-secrets set "ExternalApis:Discogs:ApiKey"       "<token>"
+dotnet user-secrets set "ExternalApis:Discogs:ApiSecret"    "<secret>"
+
+# Movies
+dotnet user-secrets set "ExternalApis:TMDb:ApiKey"         "..."
+dotnet user-secrets set "ExternalApis:OMDb:ApiKey"         "..."
+# UpcItemDb의 trial endpoint는 키가 필요 없지만, 상업 플랜을 사용할 경우 ExternalApis:UpcItemDb 섹션에 설정하세요.
 ```
 
-**실패 이유**: OMDb Provider가 13자리를 지원하지 않도록 수정했으나 테스트는 여전히 13자리 지원 기대
+### 2. `.env` / `.env.prod`
+- `.env.example` : 로컬 / `podman-compose` 용 API 키 템플릿.
+- `.env.prod.example` : `docker-compose.prod.yml` 에서 사용하는 DB + API 키 템플릿.
+- Compose 파일들은 `ExternalApis__{Provider}__*` 환경 변수를 자동으로 주입합니다.
 
-## 📝 설정 방법
-
-### appsettings.json
+### 3. appsettings 확장 (UpcItemDb 예시)
 ```json
-{
-  "ExternalApis": {
-    "KakaoBook": {
-      "ApiKey": "YOUR_KAKAO_REST_API_KEY",
-      "BaseUrl": "https://dapi.kakao.com",
-      "Priority": 2,
-      "TimeoutSeconds": 10
-    },
-    "AladinApi": {
-      "ApiKey": "YOUR_TTB_KEY",
-      "BaseUrl": "http://www.aladin.co.kr/ttb/api",
-      "Priority": 3,
-      "TimeoutSeconds": 10
-    },
-    "Discogs": {
-      "ApiKey": "YOUR_DISCOGS_TOKEN",
-      "UserAgent": "CollectionServer/1.0 +http://yoursite.com",
-      "BaseUrl": "https://api.discogs.com",
-      "Priority": 2,
-      "TimeoutSeconds": 10
-    }
+"ExternalApis": {
+  "UpcItemDb": {
+    "BaseUrl": "https://api.upcitemdb.com/prod/trial",
+    "Priority": 2,
+    "TimeoutSeconds": 10
   }
 }
 ```
 
-### User Secrets (개발 환경)
-```bash
-# Kakao Book
-dotnet user-secrets set "ExternalApis:KakaoBook:ApiKey" "YOUR_KEY"
+## 테스트 전략
+- `tests/CollectionServer.UnitTests/ExternalApis/*ProviderTests.cs` 에서 SupportsBarcode/우선순위/DTO 매핑 검증 (63개 이상의 provider 테스트 포함).
+- `tests/CollectionServer.IntegrationTests` 는 Mock HTTP 핸들러로 provider 호출을 시뮬레이션하여 NotFound, fallback, 오류 케이스를 재현.
+- 전체 스위트 (`dotnet test`) 는 280개의 테스트를 실행하며 provider 테스트도 포함됩니다.
 
-# Aladin
-dotnet user-secrets set "ExternalApis:AladinApi:ApiKey" "YOUR_KEY"
+## 알려진 제한 사항
+1. **TMDb/OMDb Stub** – UPC 기반 검색이 지원되지 않아 로그 후 null 반환. UPC→IMDb 매핑 서비스 도입 전까지 UpcItemDb 브리지에 의존합니다.
+2. **Aladin API 트랙 정보** – MallType=MUSIC 시에도 트랙 목록이 제공되지 않아 빈 배열로 응답합니다 (MusicBrainz/Discogs가 트랙을 채움).
+3. **Discogs Rate Limit** – 비인증 상태에서는 60 req/분, 토큰 사용 시 90 req/분; RateLimiter 설정(100/분)과 충돌하지 않도록 주의하세요.
 
-# Discogs
-dotnet user-secrets set "ExternalApis:Discogs:ApiKey" "YOUR_TOKEN"
-```
-
-## 🚀 API Key 발급 방법
-
-### Kakao Book
-1. https://developers.kakao.com/ 접속
-2. 내 애플리케이션 → 앱 생성
-3. 앱 설정 → 앱 키 → REST API 키 복사
-
-### Aladin
-1. http://www.aladin.co.kr/ttb/wapi_guide.aspx 접속
-2. TTBKey 발급 신청
-3. 승인 후 이메일로 Key 수신
-
-### Discogs
-1. https://www.discogs.com/settings/developers 접속
-2. Create New Application
-3. Generate Token
-
-## 🎯 우선순위 체계
-
-### 도서 (Books)
-```
-1순위: GoogleBooks (Priority: 1)
-  ↓ 실패 시
-2순위: KakaoBook (Priority: 2)
-  ↓ 실패 시
-3순위: AladinApi (Priority: 3)
-```
-
-### 음악 (Music)
-```
-1순위: MusicBrainz (Priority: 1)
-  ↓ 실패 시
-2순위: Discogs (Priority: 2)
-```
-
-### 영화 (Movies)
-```
-1순위: AladinApi (Priority: 1)
-  ↓ 실패 시
-2순위: UpcItemDbProvider (Priority: 2)
-  ↓ (UPC -> Title -> TMDb)
-```
-
-## ✨ 성과
-
-1. **도서 3개 Provider 완성**
-   - 국제 (Google Books)
-   - 한국 (Kakao, Aladin)
-   - ISBN 완벽 지원
-
-2. **음악 2개 Provider 완성**
-   - 국제 데이터베이스 (MusicBrainz, Discogs)
-   - UPC/EAN 완벽 지원
-   - 트랙 리스트 포함
-
-3. **Production Ready**
-   - 5개 Provider 즉시 사용 가능
-   - Error handling 구현
-   - Timeout 설정
-   - 로깅 완비
-
-## 🔮 향후 개선 사항
-
-1. **영화 Provider 보완**
-   - UPC → IMDb ID 매핑 서비스 통합
-   - 또는 Title 기반 검색 구현
-
-2. **캐싱 강화**
-   - 외부 API 응답 캐싱 (Redis)
-   - Rate Limit 회피
-
-3. **재시도 로직**
-   - Polly 라이브러리 통합
-   - Exponential backoff
-
-4. **모니터링**
-   - Provider별 성공률 추적
-   - 응답 시간 메트릭
-
-## 📊 최종 상태
-
-**Provider 구현**: ✅ 71% (5/7)
-- ✅ Books: 100% (3/3)
-- ✅ Music: 100% (2/2)
-- ⚠️ Movies: 0% (0/2) - Barcode 미지원
-
-**다음 단계**: 
-- Option 1: 영화 Provider 보완 (UPC 매핑 서비스)
-- Option 2: 테스트 코드 업데이트
-- Option 3: API 문서 작성
+## 향후 계획
+- 상용 UPC 데이터셋 조사 후 TMDb/OMDb provider 완전 구현.
+- Provider별 성공률/지연시간 메트릭을 Prometheus/Serilog sink로 수집.
+- `ExternalApis` 설정을 ConfigurationBinding 테스트로 검증하여 잘못된 우선순위/timeout 값을 조기에 잡아냅니다.

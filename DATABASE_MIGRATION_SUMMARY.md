@@ -1,155 +1,47 @@
-# Database Migration 시도 요약
+# Database & Migration Status (2025-11-27)
 
-**날짜**: 2025-11-19  
-**상태**: ⚠️ **PostgreSQL 호환성 문제로 InMemory DB 유지**
+## TL;DR
+- 🟢 **Production**: targets PostgreSQL 16 with retry-enabled Npgsql 10 driver + Garnet cache (`AddDatabaseServices`).
+- 🟡 **Development/Test**: intentionally use EF InMemory + Fake cache to keep inner-loop fast and avoid PostgreSQL dependencies.
+- 🔜 **Next step**: create and commit the initial EF Core migration once a managed Postgres instance is provisioned (or run `docker-compose.prod.yml`).
 
-## 🎯 목표
+## 현재 동작 방식
+| 환경 | DB | Cache | 구성 위치 |
+| --- | --- | --- | --- |
+| `Development` / `Testing` | EF InMemory (`UseInMemoryDatabase("CollectionServerDev")`) | Fake cache (tests) / optional no-op | `Program.cs` (lines 28-44) |
+| `Production` (또는 커스텀) | PostgreSQL 16 (`UseNpgsql`) | Garnet (`StackExchange.Redis` via `GarnetCacheService`) | `AddDatabaseServices` + connection strings |
 
-PostgreSQL에 데이터베이스 스키마 생성 (Migration)
+`docker-compose.prod.yml` 와 GitHub Actions는 `ASPNETCORE_ENVIRONMENT=Production` 으로 실행하므로 Postgres + Garnet 경로가 활성화됩니다.
 
-## 🐛 발생한 문제
+## 왜 InMemory를 유지하나요?
+1. **Developer velocity** – EF InMemory + Seedless 데이터로 API를 즉시 실행 가능.
+2. **Test isolation** – Integration/Contract 테스트가 InMemory DB를 각 클래스별로 분리하여 빠르게 수행.
+3. **Npgsql 10 안정화 완료** – 현재는 호환성 문제가 없지만, 실제 Postgres 인스턴스가 준비될 때까지 Schema drift를 피하기 위해 Migration을 보류 중.
 
-### Npgsql과 EF Core 10 호환성 문제
-```
-System.MissingMethodException: Method not found: 
-'System.String Microsoft.EntityFrameworkCore.Diagnostics.AbstractionsStrings.ArgumentIsEmpty(System.Object)'.
-```
+## Postgres로 전환하려면
+1. 로컬 또는 클라우드 Postgres 16 인스턴스를 준비합니다.
+2. `ConnectionStrings:DefaultConnection` 값을 `.env.prod` 또는 User Secrets에 설정합니다.
+3. 개발 중 Postgres를 사용하고 싶다면 `ASPNETCORE_ENVIRONMENT=Production` 으로 기동하거나, Program.cs에 임시 플래그를 추가합니다.
+4. (선택) `docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d` 로 prod-like 환경을 띄웁니다.
 
-**원인**:
-- EF Core 10.0이 최신 버전 (RTM)
-- Npgsql EF Core Provider가 아직 preview/rc 버전
-- API 불일치로 인한 런타임 오류
+## Migration 계획
+1. **Baseline Migration 작성**
+   ```bash
+   dotnet ef migrations add InitialCreate \
+     --project src/CollectionServer.Infrastructure \
+     --startup-project src/CollectionServer.Api
+   ```
+2. **DB 적용**
+   ```bash
+   dotnet ef database update \
+     --project src/CollectionServer.Infrastructure \
+     --startup-project src/CollectionServer.Api
+   ```
+3. **CI 통합** – GitHub Actions에 `dotnet ef database update` 단계를 추가하여 schema drift 방지.
+4. **Prod 배포** – `docker-compose.prod.yml` 에 마이그레이션 스텝 (예: `api` 컨테이너 entrypoint) 을 추가하거나, 별도의 migration job 실행.
 
-**문서 기록**:
-이 문제는 이미 Program.cs에 언급되어 있었음:
-```csharp
-// 개발 환경에서는 InMemory DB 사용 
-// (EF Core 10 + Npgsql preview 호환성 문제 회피)
-```
-
-## 🔧 시도한 해결 방법
-
-### 1. Migration 파일 생성 시도
-```bash
-$ dotnet ef migrations add InitialCreate
-Unable to create a 'DbContext' of type 'ApplicationDbContext'
-```
-→ 실패 (같은 호환성 문제)
-
-### 2. EnsureCreated() 사용
-```csharp
-dbContext.Database.EnsureCreated();
-```
-→ 실패 (같은 호환성 문제)
-
-### 3. 컨테이너 환경 변수 설정
-```yaml
-environment:
-  - DOTNET_RUNNING_IN_CONTAINER=true
-  - IN_CONTAINER=true
-```
-→ PostgreSQL 선택되었으나 연결 실패
-
-## ✅ 최종 해결책
-
-**InMemory Database 계속 사용**
-
-### 장점
-1. ✅ 즉시 작동
-2. ✅ 호환성 문제 없음
-3. ✅ 개발/테스트에 충분
-4. ✅ 빠른 성능
-
-### 단점
-1. ⚠️ 재시작 시 데이터 초기화
-2. ⚠️ Production 환경과 다름
-3. ⚠️ 영구 저장 불가
-
-## 📊 현재 상태
-
-### 작동 중 ✅
-```
-✅ API 서버: http://localhost:5283
-✅ Health Check: 200 OK
-✅ Swagger UI: 정상
-✅ Database: InMemory (Development)
-✅ CRUD 작업: 정상 (메모리 내)
-```
-
-### 미작동
-```
-❌ PostgreSQL 연결
-❌ 영구 데이터 저장
-❌ Migration 파일
-```
-
-## 🎯 향후 개선 방안
-
-### Option 1: Npgsql 정식 버전 대기 (권장)
-```bash
-# EF Core 10 호환 Npgsql 정식 버전 출시 대기
-# 예상: 2025년 말 ~ 2026년 초
-```
-
-**장점**: 공식 지원, 안정성
-**단점**: 시간 소요
-
-### Option 2: EF Core 9로 다운그레이드
-```bash
-# .NET 9 + EF Core 9 + Npgsql 9.x
-dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL --version 9.0.0
-```
-
-**장점**: PostgreSQL 즉시 사용 가능
-**단점**: .NET 10 기능 사용 불가
-
-### Option 3: SQLite 사용
-```bash
-dotnet add package Microsoft.EntityFrameworkCore.Sqlite
-```
-
-**장점**: 파일 기반, 호환성 문제 없음
-**단점**: PostgreSQL 기능 제한
-
-### Option 4: 그대로 유지 (현재 선택)
-**InMemory DB로 개발 완료 → Production 배포 시 PostgreSQL 사용**
-
-## 💡 권장 사항
-
-### 현재 단계 (개발)
-- InMemory DB 사용
-- API 기능 완성
-- 외부 API 통합
-- 테스트 코드 작성
-
-### 배포 단계 (Production)
-- Npgsql 정식 버전 사용
-- 또는 EF Core 9로 다운그레이드
-- 또는 Cloud Database 서비스 사용 (AWS RDS, Azure SQL 등)
-
-## 📝 생성/수정된 파일
-
-1. `Program.cs` - 컨테이너 환경 감지 로직 추가 (최종 되돌림)
-2. `podman-compose.yml` - IN_CONTAINER 환경 변수 추가
-3. `DATABASE_MIGRATION_SUMMARY.md` - 본 문서
-
-## 🔗 관련 이슈
-
-- [EF Core 10 Release](https://github.com/dotnet/efcore/releases/tag/v10.0.0)
-- [Npgsql EF Core Provider](https://github.com/npgsql/efcore.pg)
-- Issue: Npgsql 미정식 버전과 EF Core 10 호환성
-
-## ✨ 결론
-
-**PostgreSQL Migration은 기술적 제약으로 인해 보류**
-- InMemory DB로 API 기능은 완벽히 작동
-- 개발/테스트 단계에서는 문제 없음
-- Production 배포 시 재검토 필요
-
-**현재 프로젝트 상태**: 90% 완성 ✅
-- 핵심 API 기능: 완료
-- 외부 API 통합: 5/7 완료
-- 테스트: 259+ passing
-- 컨테이너화: 완료 (InMemory DB)
-
-**다음 우선순위**: 외부 API 키 설정 및 실제 데이터 테스트
+## 남은 과제
+- [ ] `InitialCreate` migration 커밋
+- [ ] Integration 테스트를 real Postgres 컨테이너로 실행하는 CI job 추가
+- [ ] `appsettings.Development.json` 에 선택적 Postgres 스위치 문서화
+- [ ] Monitoring (pg_stat_statements, pgBouncer 등) 가이드 `docs/deployment.md` 에 추가
