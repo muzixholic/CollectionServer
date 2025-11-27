@@ -125,6 +125,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
 app.UseRateLimiter();
+app.UseMiddleware<RateLimitMetricsMiddleware>();
 app.MapPrometheusScrapingEndpoint();
 
 // 헬스 체크 엔드포인트

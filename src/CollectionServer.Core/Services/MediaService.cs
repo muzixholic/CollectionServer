@@ -2,6 +2,8 @@ using CollectionServer.Core.Entities;
 using CollectionServer.Core.Exceptions;
 using CollectionServer.Core.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 namespace CollectionServer.Core.Services;
 
@@ -11,6 +13,14 @@ namespace CollectionServer.Core.Services;
 /// </summary>
 public class MediaService : IMediaService
 {
+    private static readonly Meter Meter = new("CollectionServer.MediaService");
+    private static readonly Counter<long> CacheHitCounter = Meter.CreateCounter<long>("collectionserver_cache_hits_total");
+    private static readonly Counter<long> CacheMissCounter = Meter.CreateCounter<long>("collectionserver_cache_misses_total");
+    private static readonly Counter<long> DatabaseHitCounter = Meter.CreateCounter<long>("collectionserver_database_hits_total");
+    private static readonly Counter<long> ProviderSuccessCounter = Meter.CreateCounter<long>("collectionserver_provider_success_total");
+    private static readonly Counter<long> ProviderFailureCounter = Meter.CreateCounter<long>("collectionserver_provider_failure_total");
+    private static readonly Histogram<double> ProviderLatencyHistogram = Meter.CreateHistogram<double>("collectionserver_provider_latency_ms", unit: "ms");
+
     private readonly IMediaRepository _repository;
     private readonly BarcodeValidator _validator;
     private readonly IEnumerable<IMediaProvider> _providers;
@@ -45,15 +55,19 @@ public class MediaService : IMediaService
         var cachedItem = await _cacheService.GetAsync<MediaItem>(cacheKey, cancellationToken);
         if (cachedItem != null)
         {
+            CacheHitCounter.Add(1);
             _logger.LogInformation("Found media item in cache for barcode: {Barcode}", barcode);
             return cachedItem;
         }
+
+        CacheMissCounter.Add(1);
 
         // 3. 데이터베이스 조회 (Database-First)
         var mediaItem = await _repository.GetByBarcodeAsync(barcode, cancellationToken);
         
         if (mediaItem != null)
         {
+            DatabaseHitCounter.Add(1);
             _logger.LogInformation("Found media item in database for barcode: {Barcode}", barcode);
             // 캐시에 저장 (1시간)
             await _cacheService.SetAsync(cacheKey, mediaItem, TimeSpan.FromHours(1), cancellationToken);
@@ -86,15 +100,19 @@ public class MediaService : IMediaService
 
         foreach (var provider in supportedProviders)
         {
+            var stopwatch = Stopwatch.StartNew();
             try
             {
                 _logger.LogInformation("Trying provider {Provider} (Priority: {Priority}) for barcode: {Barcode}", 
                     provider.ProviderName, provider.Priority, barcode);
 
                 var result = await provider.GetMediaByBarcodeAsync(barcode, cancellationToken);
+                stopwatch.Stop();
+                ProviderLatencyHistogram.Record(stopwatch.Elapsed.TotalMilliseconds, new KeyValuePair<string, object?>("provider", provider.ProviderName));
                 
                 if (result != null)
                 {
+                    ProviderSuccessCounter.Add(1, new KeyValuePair<string, object?>("provider", provider.ProviderName));
                     _logger.LogInformation("Successfully retrieved media from provider {Provider}: {Title}", 
                         provider.ProviderName, result.Title);
 
@@ -109,12 +127,16 @@ public class MediaService : IMediaService
                 }
                 else
                 {
+                    ProviderFailureCounter.Add(1, new KeyValuePair<string, object?>("provider", provider.ProviderName));
                     _logger.LogInformation("Provider {Provider} returned no results for barcode: {Barcode}", 
                         provider.ProviderName, barcode);
                 }
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
+                ProviderFailureCounter.Add(1, new KeyValuePair<string, object?>("provider", provider.ProviderName));
+                ProviderLatencyHistogram.Record(stopwatch.Elapsed.TotalMilliseconds, new KeyValuePair<string, object?>("provider", provider.ProviderName));
                 _logger.LogWarning(ex, "Provider {Provider} failed for barcode: {Barcode}", 
                     provider.ProviderName, barcode);
                 // Continue to next provider
