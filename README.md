@@ -5,7 +5,7 @@ CollectionServer는 ISBN / UPC / EAN 바코드를 입력받아 도서·영화·�
 ## 주요 특징
 - **Cache → DB → Provider 파이프라인**: Garnet(REDIS 호환), PostgreSQL, 우선순위가 지정된 Provider(Google Books, Kakao Book, Aladin, MusicBrainz, Discogs, UpcItemDb Resolver + TMDb, OMDb)를 순차적으로 조회합니다.
 - **Resilience 내장 Provider**: `IHttpClientFactory` + `Microsoft.Extensions.Http.Resilience`를 이용해 재시도·서킷브레이커·타임아웃을 표준화하고 Serilog 구조화 로그로 기록합니다.
-- **Rate Limiting & ProblemDetails**: 고정 창(개발 100 req/min, 운영 200 req/min) 제한과 한국어 ProblemDetails를 제공하여 예측 가능한 오류 처리를 지원합니다.
+- **Rate Limiting & ProblemDetails**: 클라이언트 IP 기준 고정 창(개발 100 req/min, 운영 200 req/min) 제한과 한국어 ProblemDetails를 제공하며, 초과 시 `Retry-After`, `X-RateLimit-Limit/Remaining/Reset` 헤더와 전용 JSON 응답을 함께 반환합니다.
 - **자동화된 테스트**: `dotnet test` 실행 시 단위/통합/계약 테스트 280개가 실행되어 CI 파이프라인과 동일한 품질을 보장합니다.
 - **컨테이너/배포**: 멀티 스테이지 `Containerfile`, 개발용 `podman-compose`, 운영용 `docker-compose.prod.yml`, GHCR 배포 파이프라인(`.github/workflows/ci-cd.yml`)을 제공합니다.
 

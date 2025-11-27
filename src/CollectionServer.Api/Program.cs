@@ -48,7 +48,7 @@ else
 
 // 외부 API 설정 및 Provider 등록 (모든 환경에서 필요)
 builder.Services.AddExternalApiSettings(builder.Configuration);
-builder.Services.AddRateLimitingServices();
+builder.Services.AddRateLimitingServices(builder.Configuration);
 builder.Services.AddHealthChecks();
 
 var otlpEndpoint = builder.Configuration["Monitoring:OtlpExporter:Endpoint"];
@@ -145,7 +145,6 @@ app.MapGet("/items/{barcode}", async (string barcode, IMediaService mediaService
     return Results.Ok(mediaItem);
 })
    .WithName("GetMediaByBarcode")
-   .RequireRateLimiting("api")
    .WithOpenApi(operation =>
    {
        operation.Summary = "바코드로 미디어 정보 조회";
@@ -156,6 +155,20 @@ app.MapGet("/items/{barcode}", async (string barcode, IMediaService mediaService
    .Produces(StatusCodes.Status400BadRequest)
    .Produces(StatusCodes.Status404NotFound)
    .Produces(StatusCodes.Status429TooManyRequests);
+
+if (app.Environment.IsEnvironment("Testing"))
+{
+    app.MapGet("/test/delay", async (int delayMs) =>
+    {
+        var safeDelay = Math.Clamp(delayMs, 0, 2000);
+        if (safeDelay > 0)
+        {
+            await Task.Delay(safeDelay);
+        }
+        return Results.Ok(new { delayed = safeDelay });
+    })
+    .WithName("TestDelayEndpoint");
+}
 
 await app.RunAsync();
 

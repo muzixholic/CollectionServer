@@ -7,11 +7,15 @@ using CollectionServer.Infrastructure.ExternalApis.Music;
 using CollectionServer.Infrastructure.Options;
 using CollectionServer.Infrastructure.Repositories;
 using CollectionServer.Infrastructure.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Primitives;
 using Polly;
 using StackExchange.Redis;
+using System.Globalization;
 using System.Threading.RateLimiting;
 
 namespace CollectionServer.Api.Extensions;
@@ -165,19 +169,75 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Rate Limiting 설정
     /// </summary>
-    public static IServiceCollection AddRateLimitingServices(this IServiceCollection services)
+    public static IServiceCollection AddRateLimitingServices(this IServiceCollection services, IConfiguration configuration)
     {
+        var rateLimitSection = configuration.GetSection("RateLimiting");
+        var permitLimit = rateLimitSection.GetValue<int?>("PermitLimit") ?? 100;
+        var windowSeconds = rateLimitSection.GetValue<int?>("WindowSeconds") ?? 60;
+        var queueLimit = rateLimitSection.GetValue<int?>("QueueLimit") ?? 10;
+
         services.AddRateLimiter(options =>
         {
-            options.AddFixedWindowLimiter("api", opt =>
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, cancellationToken) =>
             {
-                opt.PermitLimit = 100;
-                opt.Window = TimeSpan.FromMinutes(1);
-                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                opt.QueueLimit = 10;
+                var retryAfter = TimeSpan.FromSeconds(windowSeconds);
+                if (context.Lease?.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan metadataRetryAfter) == true)
+                {
+                    retryAfter = metadataRetryAfter;
+                }
+
+                var retryAfterSeconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
+                var resetTimestamp = DateTimeOffset.UtcNow.AddSeconds(retryAfterSeconds).ToUnixTimeSeconds();
+
+                var response = context.HttpContext.Response;
+                response.StatusCode = StatusCodes.Status429TooManyRequests;
+                response.Headers["Retry-After"] = retryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+                response.Headers["X-RateLimit-Limit"] = permitLimit.ToString(CultureInfo.InvariantCulture);
+                response.Headers["X-RateLimit-Remaining"] = "0";
+                response.Headers["X-RateLimit-Reset"] = resetTimestamp.ToString(CultureInfo.InvariantCulture);
+
+                var payload = new
+                {
+                    statusCode = StatusCodes.Status429TooManyRequests,
+                    message = "요청 제한을 초과했습니다. 잠시 후 다시 시도해주세요.",
+                    retryAfterSeconds,
+                    limit = permitLimit,
+                    remaining = 0
+                };
+
+                response.ContentType = "application/json";
+                await response.WriteAsJsonAsync(payload, cancellationToken: cancellationToken);
+            };
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            {
+                var clientIp = ResolveClientIp(httpContext);
+
+                return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = permitLimit,
+                    Window = TimeSpan.FromSeconds(windowSeconds),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = queueLimit
+                });
             });
         });
 
         return services;
+    }
+
+    private static string ResolveClientIp(HttpContext context)
+    {
+        if (context.Request.Headers.TryGetValue("X-Forwarded-For", out StringValues forwarded) && !StringValues.IsNullOrEmpty(forwarded))
+        {
+            var first = forwarded.ToString().Split(',')[0].Trim();
+            if (!string.IsNullOrWhiteSpace(first))
+            {
+                return first;
+            }
+        }
+
+        return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 }

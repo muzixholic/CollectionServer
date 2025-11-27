@@ -80,7 +80,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             db.Database.EnsureCreated();
         });
 
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment("Testing");
     }
 
     /// <summary>

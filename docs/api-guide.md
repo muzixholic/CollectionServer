@@ -154,21 +154,32 @@ GET /health
 ## Rate Limiting
 
 ### 제한 사항
+- 기준: 클라이언트 IP 주소 (X-Forwarded-For 우선)
 - **개발**: 100 요청/분
 - **프로덕션**: 200 요청/분
 
 ### 초과 시
-HTTP 429 응답과 함께 `Retry-After` 헤더가 반환됩니다:
+HTTP 429 응답과 함께 다음 헤더가 반환됩니다:
+
+- `Retry-After`: 다시 시도하기까지 남은 초
+- `X-RateLimit-Limit`: 윈도우당 허용되는 총 요청 수
+- `X-RateLimit-Remaining`: 현재 윈도우에서 남은 요청 수
+- `X-RateLimit-Reset`: Rate Limit 윈도우가 초기화되는 UNIX 타임스탬프
 
 ```http
 HTTP/1.1 429 Too Many Requests
 Retry-After: 60
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1701085200
 Content-Type: application/json
 
 {
   "statusCode": 429,
   "message": "요청 제한을 초과했습니다. 잠시 후 다시 시도해주세요.",
-  "details": "1분당 100개 요청만 가능합니다."
+  "retryAfterSeconds": 60,
+  "limit": 100,
+  "remaining": 0
 }
 ```
 
